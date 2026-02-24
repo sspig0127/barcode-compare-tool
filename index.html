@@ -54,7 +54,7 @@
       z-index: 1000;
       flex-direction: column;
       align-items: center;
-      /* justify-content: center ← 已移除，避免遮蓋鏡頭選單 */
+      /* justify-content: center ← 已移除 */
       padding: 8px 10px;
       padding-top:    calc(8px + env(safe-area-inset-top,    0px));
       padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
@@ -70,7 +70,7 @@
       overflow: hidden;
     }
 
-    /* 鏡頭選單固定在頂部 */
+    /* 鏡頭選單 */
     .camera-selector-wrap {
       flex-shrink: 0;
       width: 100%;
@@ -78,7 +78,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
     .camera-selector-wrap label {
       color: #fff; font-size: 14px;
@@ -92,16 +92,43 @@
     #cameraSelect option   { color: #333; background: #fff; }
     #cameraSelect:disabled { opacity: 0.6; }
 
-    /* ★ 取消按鈕：縮小尺寸，固定在底部 */
+    /* ★ 1D / 2D 切換按鈕列 */
+    .scan-mode-wrap {
+      flex-shrink: 0;
+      width: 100%;
+      max-width: 500px;
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .btn-mode {
+      flex: 1;
+      padding: 7px 10px;
+      font-size: 13px;
+      font-weight: bold;
+      border-radius: 20px;              /* pill 造型 */
+      border: 2px solid rgba(255,255,255,0.45);
+      background: transparent;
+      color: rgba(255,255,255,0.55);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .btn-mode.active {
+      background: #ffffff;
+      color: #1a1a1a;
+      border-color: #ffffff;
+    }
+
+    /* 取消按鈕 */
     .btn-cancel-scan {
       flex-shrink: 0;
       margin-top: 8px;
       margin-bottom: 4px;
       background-color: #dc3545;
       color: white;
-      width: auto;       /* 依文字內容自適應，不撐滿 */
-      padding: 8px 28px; /* 覆寫全域 button 的 12px */
-      font-size: 14px;   /* 覆寫全域 button 的 16px */
+      width: auto;
+      padding: 8px 28px;
+      font-size: 14px;
     }
 
     /* ── 結果 Modal ── */
@@ -187,13 +214,25 @@
 
   <!-- 掃描器覆蓋層 -->
   <div id="scanner-container">
-    <!-- 鏡頭選擇下拉選單 -->
+
+    <!-- 鏡頭選擇 -->
     <div class="camera-selector-wrap">
       <label id="ui-camera-label">切換鏡頭：</label>
       <select id="cameraSelect" onchange="switchCamera(this.value)" disabled>
         <option id="ui-camera-loading-opt">載入鏡頭清單...</option>
       </select>
     </div>
+
+    <!-- ★ 1D / 2D 切換 -->
+    <div class="scan-mode-wrap">
+      <button class="btn-mode" id="btn-mode-1d" onclick="setScanMode('1D')">
+        📊 <span id="ui-btn-mode-1d">1D 條碼</span>
+      </button>
+      <button class="btn-mode active" id="btn-mode-2d" onclick="setScanMode('2D')">
+        ▦ <span id="ui-btn-mode-2d">2D / QR Code</span>
+      </button>
+    </div>
+
     <div id="reader"></div>
     <button class="btn-cancel-scan" id="ui-btn-cancel-scan" onclick="stopScan()">取消掃描</button>
   </div>
@@ -211,10 +250,12 @@
   </div>
 
   <script>
-    let html5QrCode   = null;
-    let currentTarget = null;
-    let currentLang   = 'zh-TW';
-    let cameras       = [];
+    let html5QrCode    = null;
+    let currentTarget  = null;
+    let currentLang    = 'zh-TW';
+    let cameras        = [];
+    let scanMode       = '2D';   // ★ '1D' | '2D'，預設 2D
+    let currentCameraId = null;  // ★ 記錄目前使用的鏡頭 ID
 
     // ── i18n 翻譯表 ──────────────────────────────────────────────
     const translations = {
@@ -244,6 +285,8 @@
         cameraLoading : '載入鏡頭清單...',
         cameraDefault : '鏡頭',
         alertCamSwitch: '切換鏡頭失敗：',
+        btnMode1D     : '1D 條碼',       // ★
+        btnMode2D     : '2D / QR Code',  // ★
       },
       'en': {
         title         : 'Barcode Matcher',
@@ -271,6 +314,8 @@
         cameraLoading : 'Loading cameras...',
         cameraDefault : 'Camera',
         alertCamSwitch: 'Camera switch failed: ',
+        btnMode1D     : '1D Barcode',    // ★
+        btnMode2D     : '2D / QR Code',  // ★
       },
       'vi': {
         title         : 'Công cụ so sánh mã vạch',
@@ -298,6 +343,8 @@
         cameraLoading : 'Đang tải camera...',
         cameraDefault : 'Camera',
         alertCamSwitch: 'Chuyển camera thất bại: ',
+        btnMode1D     : '1D Mã vạch',   // ★
+        btnMode2D     : '2D / QR Code', // ★
       }
     };
 
@@ -324,6 +371,8 @@
       document.getElementById('ui-modal-row2').innerText      = t.modalRow2;
       document.getElementById('ui-modal-close').innerText     = t.modalClose;
       document.getElementById('ui-camera-label').innerText    = t.cameraLabel;
+      document.getElementById('ui-btn-mode-1d').innerText     = t.btnMode1D; // ★
+      document.getElementById('ui-btn-mode-2d').innerText     = t.btnMode2D; // ★
     }
 
     // ── 條碼字串萃取（可依需求自行修改） ────────────────────────
@@ -331,19 +380,36 @@
       return rawText;
     }
 
+    // ★ qrbox 計算：依 scanMode 回傳對應掃描框尺寸 ─────────────
+    function calcQrbox(viewW, viewH) {
+      if (scanMode === '1D') {
+        // 寬扁長條：模擬 1D 掃描線區域
+        return {
+          width:  Math.floor(viewW * 0.85),
+          height: Math.floor(viewH * 0.20)
+        };
+      } else {
+        // 正方形：適合 QR Code / 2D
+        const side = Math.floor(Math.min(viewW, viewH) * 0.72);
+        return { width: side, height: side };
+      }
+    }
+
     // ── 以指定鏡頭 ID 啟動掃描 ──────────────────────────────────
     async function startScanWithCamera(cameraId) {
       if (html5QrCode && html5QrCode.isScanning) {
         await html5QrCode.stop();
       }
+      currentCameraId = cameraId; // ★ 記錄目前鏡頭
       const config = {
         fps: 15,
         useBarCodeDetectorIfSupported: true,
+        qrbox: calcQrbox,           // ★ 傳入函式，每次啟動自動計算
         videoConstraints: {
           deviceId: { exact: cameraId },
           width:  { ideal: 1280 },
           height: { ideal: 720  },
-          advanced: [{ focusMode: 'continuous' }, { torch: true }]
+          advanced: [{ focusMode: 'continuous' }]
         }
       };
       await html5QrCode.start(
@@ -353,7 +419,31 @@
       );
     }
 
-    // ── 使用者切換下拉選單時觸發 ─────────────────────────────────
+    // ★ 切換 1D / 2D 掃描模式 ────────────────────────────────────
+    async function setScanMode(mode) {
+      if (scanMode === mode) return;  // 已是該模式，不重啟
+      scanMode = mode;
+
+      // 更新按鈕樣式
+      document.getElementById('btn-mode-1d').classList.toggle('active', mode === '1D');
+      document.getElementById('btn-mode-2d').classList.toggle('active', mode === '2D');
+
+      // 若相機正在運行，重啟以套用新的 qrbox
+      if (currentCameraId && html5QrCode && html5QrCode.isScanning) {
+        const select = document.getElementById('cameraSelect');
+        select.disabled = true;
+        try {
+          await startScanWithCamera(currentCameraId);
+        } catch (err) {
+          alert(translations[currentLang].alertCamFail + '\n' + err);
+          stopScan();
+        } finally {
+          select.disabled = false;
+        }
+      }
+    }
+
+    // ── 使用者切換鏡頭下拉選單 ──────────────────────────────────
     async function switchCamera(cameraId) {
       if (!cameraId) return;
       const select = document.getElementById('cameraSelect');
@@ -394,7 +484,6 @@
         });
         select.disabled = false;
 
-        // 優先選後置鏡頭
         const backCam    = cameras.find(c => /back|rear|environment|後/i.test(c.label));
         const defaultCam = backCam || cameras[cameras.length - 1];
         select.value = defaultCam.id;
@@ -406,12 +495,12 @@
           stopScan();
         }
       } else {
-        // getCameras() 失敗 → 退回 facingMode fallback
+        // fallback：getCameras() 失敗
         select.innerHTML = `<option value="">${t.cameraDefault} (預設)</option>`;
         try {
           await html5QrCode.start(
             { facingMode: 'environment' },
-            { fps: 15, useBarCodeDetectorIfSupported: true },
+            { fps: 15, useBarCodeDetectorIfSupported: true, qrbox: calcQrbox },
             onScanSuccess
           );
         } catch (err) {
