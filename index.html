@@ -45,38 +45,62 @@
     .btn-clear-all { background-color: #dc3545; color: white; }
     .btn-compare { background-color: #198754; color: white; }
 
-    /* ── 掃描器覆蓋層 ── */
-    #scanner-container {
-      display: none; position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.9); z-index: 1000;
-      flex-direction: column; justify-content: center; align-items: center;
-      padding: 10px; box-sizing: border-box;
-    }
-    #reader { width: 100%; max-width: 500px; }
-    .btn-cancel-scan {
-      margin-top: 20px; background-color: #dc3545;
-      color: white; width: 80%; max-width: 300px;
-    }
+    /* ── 掃描器覆蓋層 ：移除 justify-content:center，改從頂端排列 */
+#scanner-container {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.9);
+  z-index: 1000;
+  flex-direction: column;
+  align-items: center;                                         /* 移除 justify-content: center */
+  padding: 8px 10px;
+  padding-top:    calc(8px + env(safe-area-inset-top,    0px)); /* iPhone 瀏海安全區 */
+  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); /* iPhone 底部安全區 */
+  box-sizing: border-box;
+}
 
-    /* ── 鏡頭選擇器 ── */
-    .camera-selector-wrap {
-      width: 100%; max-width: 500px;
-      display: flex; align-items: center; gap: 8px;
-      margin-bottom: 10px;
-    }
-    .camera-selector-wrap label {
-      color: #fff; font-size: 14px;
-      white-space: nowrap; margin: 0; font-weight: normal;
-    }
-    #cameraSelect {
-      flex: 1; padding: 8px 10px; font-size: 14px;
-      border-radius: 6px; border: 1px solid rgba(255,255,255,0.4);
-      background: rgba(255,255,255,0.15); color: #fff;
-    }
-    #cameraSelect option { color: #333; background: #fff; }
-    #cameraSelect:disabled { opacity: 0.6; }
+    /* 2. reader：flex:1 填滿中間剩餘空間，min-height:0 允許縮小 */
+#reader {
+  width: 100%;
+  max-width: 500px;
+  flex: 1;          /* ★ 關鍵：佔滿中間空間 */
+  min-height: 0;    /* ★ 關鍵：讓 flex 子項可以縮小 */
+  overflow: hidden;
+}
+    /* ── 鏡頭選擇器 ：flex-shrink:0 防止被影片預覽擠壓消失 */
+.camera-selector-wrap {
+  flex-shrink: 0;   /* ★ 關鍵：固定高度，不被壓縮 */
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.camera-selector-wrap label {
+  color: #fff; font-size: 14px;
+  white-space: nowrap; margin: 0; font-weight: normal;
+}
+#cameraSelect {
+  flex: 1; padding: 8px 10px; font-size: 14px;
+  border-radius: 6px; border: 1px solid rgba(255,255,255,0.4);
+  background: rgba(255,255,255,0.15); color: #fff;
+}
+#cameraSelect option  { color: #333; background: #fff; }
+#cameraSelect:disabled { opacity: 0.6; }
 
+/* 4. 取消按鈕：flex-shrink:0 確保永遠顯示在底部 */
+.btn-cancel-scan {
+  flex-shrink: 0;   /* ★ 關鍵：固定高度，不被壓縮 */
+  margin-top: 10px;
+  margin-bottom: 4px;
+  background-color: #dc3545;
+  color: white;
+  width: 80%;
+  max-width: 300px;
+}
+    
     /* ── 結果 Modal ── */
     .modal {
       display: none; position: fixed;
