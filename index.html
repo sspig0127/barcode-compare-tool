@@ -40,67 +40,69 @@
       flex: 1; padding: 12px; font-size: 16px;
       border: none; border-radius: 6px; cursor: pointer; font-weight: bold;
     }
-    .btn-scan    { background-color: #0d6efd; color: white; }
-    .btn-clear   { background-color: #6c757d; color: white; }
+    .btn-scan      { background-color: #0d6efd; color: white; }
+    .btn-clear     { background-color: #6c757d; color: white; }
     .btn-clear-all { background-color: #dc3545; color: white; }
-    .btn-compare { background-color: #198754; color: white; }
+    .btn-compare   { background-color: #198754; color: white; }
 
-    /* ── 掃描器覆蓋層 ：移除 justify-content:center，改從頂端排列 */
-#scanner-container {
-  display: none;
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.9);
-  z-index: 1000;
-  flex-direction: column;
-  align-items: center;                                         /* 移除 justify-content: center */
-  padding: 8px 10px;
-  padding-top:    calc(8px + env(safe-area-inset-top,    0px)); /* iPhone 瀏海安全區 */
-  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); /* iPhone 底部安全區 */
-  box-sizing: border-box;
-}
+    /* ── 掃描器覆蓋層 ── */
+    #scanner-container {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.9);
+      z-index: 1000;
+      flex-direction: column;
+      align-items: center;
+      /* justify-content: center; ← 已移除，避免遮蓋鏡頭選單 */
+      padding: 8px 10px;
+      padding-top:    calc(8px + env(safe-area-inset-top,    0px));
+      padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+      box-sizing: border-box;
+    }
 
-    /* 2. reader：flex:1 填滿中間剩餘空間，min-height:0 允許縮小 */
-#reader {
-  width: 100%;
-  max-width: 500px;
-  flex: 1;          /* ★ 關鍵：佔滿中間空間 */
-  min-height: 0;    /* ★ 關鍵：讓 flex 子項可以縮小 */
-  overflow: hidden;
-}
-    /* ── 鏡頭選擇器 ：flex-shrink:0 防止被影片預覽擠壓消失 */
-.camera-selector-wrap {
-  flex-shrink: 0;   /* ★ 關鍵：固定高度，不被壓縮 */
-  width: 100%;
-  max-width: 500px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-.camera-selector-wrap label {
-  color: #fff; font-size: 14px;
-  white-space: nowrap; margin: 0; font-weight: normal;
-}
-#cameraSelect {
-  flex: 1; padding: 8px 10px; font-size: 14px;
-  border-radius: 6px; border: 1px solid rgba(255,255,255,0.4);
-  background: rgba(255,255,255,0.15); color: #fff;
-}
-#cameraSelect option  { color: #333; background: #fff; }
-#cameraSelect:disabled { opacity: 0.6; }
+    /* 填滿中間剩餘空間 */
+    #reader {
+      width: 100%;
+      max-width: 500px;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
 
-/* 4. 取消按鈕：flex-shrink:0 確保永遠顯示在底部 */
-.btn-cancel-scan {
-  flex-shrink: 0;   /* ★ 關鍵：固定高度，不被壓縮 */
-  margin-top: 10px;
-  margin-bottom: 4px;
-  background-color: #dc3545;
-  color: white;
-  width: 80%;
-  max-width: 300px;
-}
-    
+    /* 鏡頭選單固定在頂部 */
+    .camera-selector-wrap {
+      flex-shrink: 0;
+      width: 100%;
+      max-width: 500px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .camera-selector-wrap label {
+      color: #fff; font-size: 14px;
+      white-space: nowrap; margin: 0; font-weight: normal;
+    }
+    #cameraSelect {
+      flex: 1; padding: 8px 10px; font-size: 14px;
+      border-radius: 6px; border: 1px solid rgba(255,255,255,0.4);
+      background: rgba(255,255,255,0.15); color: #fff;
+    }
+    #cameraSelect option  { color: #333; background: #fff; }
+    #cameraSelect:disabled { opacity: 0.6; }
+
+    /* 取消按鈕固定在底部 */
+    .btn-cancel-scan {
+      flex-shrink: 0;
+      margin-top: 10px;
+      margin-bottom: 4px;
+      background-color: #dc3545;
+      color: white;
+      width: 80%;
+      max-width: 300px;
+    }
+
     /* ── 結果 Modal ── */
     .modal {
       display: none; position: fixed;
@@ -184,7 +186,7 @@
 
   <!-- 掃描器覆蓋層 -->
   <div id="scanner-container">
-    <!-- ★ 新增：鏡頭選擇下拉選單 -->
+    <!-- 鏡頭選擇下拉選單 -->
     <div class="camera-selector-wrap">
       <label id="ui-camera-label">切換鏡頭：</label>
       <select id="cameraSelect" onchange="switchCamera(this.value)" disabled>
@@ -211,90 +213,90 @@
     let html5QrCode  = null;
     let currentTarget = null;
     let currentLang   = 'zh-TW';
-    let cameras       = [];   // ★ 儲存所有鏡頭資訊
+    let cameras       = [];
 
     // ── i18n 翻譯表 ──────────────────────────────────────────────
     const translations = {
       'zh-TW': {
-        title          : '條碼比對工具',
-        modeLabel      : '比對模式：',
-        modeAuto       : '自動比對',
-        modeManual     : '手動點選',
-        fieldALabel    : 'A 欄位',
-        fieldBLabel    : 'B 欄位',
-        placeholder    : '手動輸入或點下方掃描',
-        btnScanA       : '📷 掃描 A',
-        btnScanB       : '📷 掃描 B',
-        btnClearA      : '清除 A',
-        btnClearB      : '清除 B',
-        btnClearAll    : '🗑️ 清除全部',
-        btnCompare     : '🔍 執行比對',
-        btnCancelScan  : '取消掃描',
-        modalRow1      : '第一列 (A欄位)',
-        modalRow2      : '第二列 (B欄位)',
-        modalClose     : '關閉',
-        matchSuccess   : '✅ 比對成功',
-        matchFail      : '❌ 比對失敗',
-        alertEmpty     : '請確保 A、B 兩欄位都有條碼資料！',
-        alertCamFail   : '鏡頭啟動失敗，請確認相機權限。',
-        cameraLabel    : '切換鏡頭：',          // ★ 新增
-        cameraLoading  : '載入鏡頭清單...',     // ★ 新增
-        cameraDefault  : '鏡頭',               // ★ 新增（無標籤時的備用名稱）
-        alertCamSwitch : '切換鏡頭失敗：',      // ★ 新增
+        title         : '條碼比對工具',
+        modeLabel     : '比對模式：',
+        modeAuto      : '自動比對',
+        modeManual    : '手動點選',
+        fieldALabel   : 'A 欄位',
+        fieldBLabel   : 'B 欄位',
+        placeholder   : '手動輸入或點下方掃描',
+        btnScanA      : '📷 掃描 A',
+        btnScanB      : '📷 掃描 B',
+        btnClearA     : '清除 A',
+        btnClearB     : '清除 B',
+        btnClearAll   : '🗑️ 清除全部',
+        btnCompare    : '🔍 執行比對',
+        btnCancelScan : '取消掃描',
+        modalRow1     : '第一列 (A欄位)',
+        modalRow2     : '第二列 (B欄位)',
+        modalClose    : '關閉',
+        matchSuccess  : '✅ 比對成功',
+        matchFail     : '❌ 比對失敗',
+        alertEmpty    : '請確保 A、B 兩欄位都有條碼資料！',
+        alertCamFail  : '鏡頭啟動失敗，請確認相機權限。',
+        cameraLabel   : '切換鏡頭：',
+        cameraLoading : '載入鏡頭清單...',
+        cameraDefault : '鏡頭',
+        alertCamSwitch: '切換鏡頭失敗：',
       },
       'en': {
-        title          : 'Barcode Matcher',
-        modeLabel      : 'Mode:',
-        modeAuto       : 'Auto Match',
-        modeManual     : 'Manual',
-        fieldALabel    : 'Field A',
-        fieldBLabel    : 'Field B',
-        placeholder    : 'Type manually or tap scan below',
-        btnScanA       : '📷 Scan A',
-        btnScanB       : '📷 Scan B',
-        btnClearA      : 'Clear A',
-        btnClearB      : 'Clear B',
-        btnClearAll    : '🗑️ Clear All',
-        btnCompare     : '🔍 Compare',
-        btnCancelScan  : 'Cancel Scan',
-        modalRow1      : 'Row 1 (Field A)',
-        modalRow2      : 'Row 2 (Field B)',
-        modalClose     : 'Close',
-        matchSuccess   : '✅ Match — Success',
-        matchFail      : '❌ Mismatch — Fail',
-        alertEmpty     : 'Please ensure both fields have barcode data!',
-        alertCamFail   : 'Camera failed. Check permissions.',
-        cameraLabel    : 'Switch Camera:',
-        cameraLoading  : 'Loading cameras...',
-        cameraDefault  : 'Camera',
-        alertCamSwitch : 'Camera switch failed: ',
+        title         : 'Barcode Matcher',
+        modeLabel     : 'Mode:',
+        modeAuto      : 'Auto Match',
+        modeManual    : 'Manual',
+        fieldALabel   : 'Field A',
+        fieldBLabel   : 'Field B',
+        placeholder   : 'Type manually or tap scan below',
+        btnScanA      : '📷 Scan A',
+        btnScanB      : '📷 Scan B',
+        btnClearA     : 'Clear A',
+        btnClearB     : 'Clear B',
+        btnClearAll   : '🗑️ Clear All',
+        btnCompare    : '🔍 Compare',
+        btnCancelScan : 'Cancel Scan',
+        modalRow1     : 'Row 1 (Field A)',
+        modalRow2     : 'Row 2 (Field B)',
+        modalClose    : 'Close',
+        matchSuccess  : '✅ Match — Success',
+        matchFail     : '❌ Mismatch — Fail',
+        alertEmpty    : 'Please ensure both fields have barcode data!',
+        alertCamFail  : 'Camera failed. Check permissions.',
+        cameraLabel   : 'Switch Camera:',
+        cameraLoading : 'Loading cameras...',
+        cameraDefault : 'Camera',
+        alertCamSwitch: 'Camera switch failed: ',
       },
       'vi': {
-        title          : 'Công cụ so sánh mã vạch',
-        modeLabel      : 'Chế độ:',
-        modeAuto       : 'Tự động',
-        modeManual     : 'Thủ công',
-        fieldALabel    : 'Trường A',
-        fieldBLabel    : 'Trường B',
-        placeholder    : 'Nhập thủ công hoặc nhấn quét',
-        btnScanA       : '📷 Quét A',
-        btnScanB       : '📷 Quét B',
-        btnClearA      : 'Xóa A',
-        btnClearB      : 'Xóa B',
-        btnClearAll    : '🗑️ Xóa tất cả',
-        btnCompare     : '🔍 So sánh',
-        btnCancelScan  : 'Hủy quét',
-        modalRow1      : 'Hàng 1 (Trường A)',
-        modalRow2      : 'Hàng 2 (Trường B)',
-        modalClose     : 'Đóng',
-        matchSuccess   : '✅ Khớp — Thành công',
-        matchFail      : '❌ Không khớp — Thất bại',
-        alertEmpty     : 'Vui lòng đảm bảo cả hai trường đều có dữ liệu!',
-        alertCamFail   : 'Lỗi máy ảnh. Kiểm tra quyền.',
-        cameraLabel    : 'Chuyển camera:',
-        cameraLoading  : 'Đang tải camera...',
-        cameraDefault  : 'Camera',
-        alertCamSwitch : 'Chuyển camera thất bại: ',
+        title         : 'Công cụ so sánh mã vạch',
+        modeLabel     : 'Chế độ:',
+        modeAuto      : 'Tự động',
+        modeManual    : 'Thủ công',
+        fieldALabel   : 'Trường A',
+        fieldBLabel   : 'Trường B',
+        placeholder   : 'Nhập thủ công hoặc nhấn quét',
+        btnScanA      : '📷 Quét A',
+        btnScanB      : '📷 Quét B',
+        btnClearA     : 'Xóa A',
+        btnClearB     : 'Xóa B',
+        btnClearAll   : '🗑️ Xóa tất cả',
+        btnCompare    : '🔍 So sánh',
+        btnCancelScan : 'Hủy quét',
+        modalRow1     : 'Hàng 1 (Trường A)',
+        modalRow2     : 'Hàng 2 (Trường B)',
+        modalClose    : 'Đóng',
+        matchSuccess  : '✅ Khớp — Thành công',
+        matchFail     : '❌ Không khớp — Thất bại',
+        alertEmpty    : 'Vui lòng đảm bảo cả hai trường đều có dữ liệu!',
+        alertCamFail  : 'Lỗi máy ảnh. Kiểm tra quyền.',
+        cameraLabel   : 'Chuyển camera:',
+        cameraLoading : 'Đang tải camera...',
+        cameraDefault : 'Camera',
+        alertCamSwitch: 'Chuyển camera thất bại: ',
       }
     };
 
@@ -302,33 +304,33 @@
     function changeLanguage() {
       currentLang = document.getElementById('langSelector').value;
       const t = translations[currentLang];
-      document.getElementById('ui-title').innerText          = t.title;
-      document.getElementById('ui-mode-label').innerText     = t.modeLabel;
-      document.getElementById('ui-mode-auto').innerText      = t.modeAuto;
-      document.getElementById('ui-mode-manual').innerText    = t.modeManual;
-      document.getElementById('ui-field-a-label').innerText  = t.fieldALabel;
-      document.getElementById('ui-field-b-label').innerText  = t.fieldBLabel;
-      document.getElementById('fieldA').placeholder          = t.placeholder;
-      document.getElementById('fieldB').placeholder          = t.placeholder;
-      document.getElementById('ui-btn-scan-a').innerText     = t.btnScanA;
-      document.getElementById('ui-btn-scan-b').innerText     = t.btnScanB;
-      document.getElementById('ui-btn-clear-a').innerText    = t.btnClearA;
-      document.getElementById('ui-btn-clear-b').innerText    = t.btnClearB;
-      document.getElementById('ui-btn-clear-all').innerText  = t.btnClearAll;
-      document.getElementById('ui-btn-compare').innerText    = t.btnCompare;
+      document.getElementById('ui-title').innerText           = t.title;
+      document.getElementById('ui-mode-label').innerText      = t.modeLabel;
+      document.getElementById('ui-mode-auto').innerText       = t.modeAuto;
+      document.getElementById('ui-mode-manual').innerText     = t.modeManual;
+      document.getElementById('ui-field-a-label').innerText   = t.fieldALabel;
+      document.getElementById('ui-field-b-label').innerText   = t.fieldBLabel;
+      document.getElementById('fieldA').placeholder           = t.placeholder;
+      document.getElementById('fieldB').placeholder           = t.placeholder;
+      document.getElementById('ui-btn-scan-a').innerText      = t.btnScanA;
+      document.getElementById('ui-btn-scan-b').innerText      = t.btnScanB;
+      document.getElementById('ui-btn-clear-a').innerText     = t.btnClearA;
+      document.getElementById('ui-btn-clear-b').innerText     = t.btnClearB;
+      document.getElementById('ui-btn-clear-all').innerText   = t.btnClearAll;
+      document.getElementById('ui-btn-compare').innerText     = t.btnCompare;
       document.getElementById('ui-btn-cancel-scan').innerText = t.btnCancelScan;
-      document.getElementById('ui-modal-row1').innerText     = t.modalRow1;
-      document.getElementById('ui-modal-row2').innerText     = t.modalRow2;
-      document.getElementById('ui-modal-close').innerText    = t.modalClose;
-      document.getElementById('ui-camera-label').innerText   = t.cameraLabel; // ★ 新增
+      document.getElementById('ui-modal-row1').innerText      = t.modalRow1;
+      document.getElementById('ui-modal-row2').innerText      = t.modalRow2;
+      document.getElementById('ui-modal-close').innerText     = t.modalClose;
+      document.getElementById('ui-camera-label').innerText    = t.cameraLabel;
     }
 
-    // ── 條碼字串萃取（保留原始邏輯，可自行修改） ────────────────
+    // ── 條碼字串萃取（可依需求自行修改） ────────────────────────
     function extractSpecificText(rawText) {
       return rawText;
     }
 
-    // ── ★ 新增：以指定鏡頭 ID 啟動掃描 ─────────────────────────
+    // ── 以指定鏡頭 ID 啟動掃描 ──────────────────────────────────
     async function startScanWithCamera(cameraId) {
       if (html5QrCode && html5QrCode.isScanning) {
         await html5QrCode.stop();
@@ -350,7 +352,7 @@
       );
     }
 
-    // ── ★ 新增：使用者切換下拉選單時觸發 ────────────────────────
+    // ── 使用者切換下拉選單時觸發 ─────────────────────────────────
     async function switchCamera(cameraId) {
       if (!cameraId) return;
       const select = document.getElementById('cameraSelect');
@@ -364,7 +366,7 @@
       }
     }
 
-    // ── 掃描入口（改為 async，呼叫 getCameras） ──────────────────
+    // ── 掃描入口 ─────────────────────────────────────────────────
     async function startScan(target) {
       currentTarget = target;
       document.getElementById('scanner-container').style.display = 'flex';
@@ -376,28 +378,23 @@
       select.disabled  = true;
 
       try {
-        // ★ 取得所有鏡頭（會觸發相機授權彈窗）
         cameras = await Html5Qrcode.getCameras();
       } catch (err) {
         cameras = [];
       }
 
       if (cameras.length > 0) {
-        // 填充下拉選單
         select.innerHTML = '';
         cameras.forEach((cam, idx) => {
-          const opt  = document.createElement('option');
-          opt.value  = cam.id;
-          opt.text   = cam.label || `${t.cameraDefault} ${idx + 1}`;
+          const opt = document.createElement('option');
+          opt.value = cam.id;
+          opt.text  = cam.label || `${t.cameraDefault} ${idx + 1}`;
           select.appendChild(opt);
         });
         select.disabled = false;
 
-        // 優先選後置鏡頭（matching 常見關鍵字）
-        const backCam = cameras.find(c =>
-          /back|rear|environment|後/i.test(c.label)
-        );
-        // fallback：取最後一顆（多鏡頭手機通常後置排在最後）
+        // 優先選後置鏡頭
+        const backCam    = cameras.find(c => /back|rear|environment|後/i.test(c.label));
         const defaultCam = backCam || cameras[cameras.length - 1];
         select.value = defaultCam.id;
 
@@ -479,8 +476,8 @@
       document.getElementById('modalValA').innerText = valA;
       document.getElementById('modalValB').innerText = valB;
       const el = document.getElementById('modalResult');
-      el.innerText   = isMatch ? t.matchSuccess : t.matchFail;
-      el.className   = 'result-text ' + (isMatch ? 'match' : 'mismatch');
+      el.innerText  = isMatch ? t.matchSuccess : t.matchFail;
+      el.className  = 'result-text ' + (isMatch ? 'match' : 'mismatch');
       document.getElementById('resultModal').style.display = 'flex';
     }
 
