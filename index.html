@@ -309,7 +309,7 @@
             return rawText; 
         }
 
-        // 啟動相機掃描 (已包含一維條碼優化設定)
+     // 啟動相機掃描 (已修復權限與設定錯誤)
         function startScan(target) {
             currentTarget = target;
             document.getElementById('scanner-container').style.display = 'flex';
@@ -318,25 +318,27 @@
                 html5QrCode = new Html5Qrcode("reader");
             }
             
-            // 相機硬體要求 (提高解析度)
-            const cameraConfig = {
-                facingMode: "environment",
-                width: { ideal: 1280 },
-                height: { ideal: 720 },
-                advanced: [{ focusMode: "continuous" }]
-            };
+            // 1. 基本相機指定 (解決 1 key 報錯：這裡只能放一個屬性)
+            const cameraConfig = { facingMode: "environment" };
 
-            // 掃描器參數 (稍微提高每秒掃描幀數，並且不限制方形框框，全畫面掃描更適合一維條碼)
+            // 2. 掃描器與進階影像設定
             const scanConfig = { 
                 fps: 15,
+                // 【修正】將高解析度與對焦等進階設定，包在 videoConstraints 裡面
+                videoConstraints: {
+                    facingMode: "environment",
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                    advanced: [{ focusMode: "continuous" }]
+                }
                 // 若想要恢復掃描框，可以取消下方註解：
-                // qrbox: { width: 300, height: 150 } 
+                // , qrbox: { width: 300, height: 150 } 
             };
 
             // 啟動相機
             html5QrCode.start(cameraConfig, scanConfig, onScanSuccess)
             .catch(err => {
-                alert(translations[currentLang].alertCamFail + err);
+                alert(translations[currentLang].alertCamFail + "\n" + err);
                 stopScan();
             });
         }
