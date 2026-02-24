@@ -54,14 +54,14 @@
       z-index: 1000;
       flex-direction: column;
       align-items: center;
-      /* justify-content: center; ← 已移除，避免遮蓋鏡頭選單 */
+      /* justify-content: center ← 已移除，避免遮蓋鏡頭選單 */
       padding: 8px 10px;
       padding-top:    calc(8px + env(safe-area-inset-top,    0px));
       padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
       box-sizing: border-box;
     }
 
-    /* 填滿中間剩餘空間 */
+    /* 相機預覽填滿中間空間 */
     #reader {
       width: 100%;
       max-width: 500px;
@@ -89,18 +89,19 @@
       border-radius: 6px; border: 1px solid rgba(255,255,255,0.4);
       background: rgba(255,255,255,0.15); color: #fff;
     }
-    #cameraSelect option  { color: #333; background: #fff; }
+    #cameraSelect option   { color: #333; background: #fff; }
     #cameraSelect:disabled { opacity: 0.6; }
 
-    /* 取消按鈕固定在底部 */
+    /* ★ 取消按鈕：縮小尺寸，固定在底部 */
     .btn-cancel-scan {
       flex-shrink: 0;
-      margin-top: 10px;
+      margin-top: 8px;
       margin-bottom: 4px;
       background-color: #dc3545;
       color: white;
-      width: 80%;
-      max-width: 300px;
+      width: auto;       /* 依文字內容自適應，不撐滿 */
+      padding: 8px 28px; /* 覆寫全域 button 的 12px */
+      font-size: 14px;   /* 覆寫全域 button 的 16px */
     }
 
     /* ── 結果 Modal ── */
@@ -210,7 +211,7 @@
   </div>
 
   <script>
-    let html5QrCode  = null;
+    let html5QrCode   = null;
     let currentTarget = null;
     let currentLang   = 'zh-TW';
     let cameras       = [];
@@ -342,8 +343,7 @@
           deviceId: { exact: cameraId },
           width:  { ideal: 1280 },
           height: { ideal: 720  },
-          // 嘗試要求連續對焦，並且將畫面放大 1.5倍 (zoom)
-          advanced: [{ focusMode: "continuous" }, { torch: true },{ zoom: 1.5 }]
+          advanced: [{ focusMode: 'continuous' }]
         }
       };
       await html5QrCode.start(
