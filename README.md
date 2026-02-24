@@ -53,10 +53,11 @@ const translations = {
 ```
 
 
-
 新增完畢後，記得在 HTML 的 <select id="langSelector"> 中加入對應的 <option value="id">Bahasa Indonesia</option> 即可完成擴充！
 
 ---
+
+
 
 ## 📦 使用技術
 - HTML5 / CSS3 / Vanilla JavaScript
@@ -65,8 +66,13 @@ const translations = {
 
 - [Quagga2 (@ericblade/quagga2) - 負責 1D 條碼解析與即時定位追蹤](https://github.com/ericblade/quagga2)
 
+
+
 ---
 
+
+
 ## 📄 授權條款 (License)
+
 
 [MIT License](https://www.google.com/url?sa=E&q=LICENSE)
