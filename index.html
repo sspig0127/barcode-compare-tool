@@ -342,7 +342,8 @@
           deviceId: { exact: cameraId },
           width:  { ideal: 1280 },
           height: { ideal: 720  },
-          advanced: [{ focusMode: 'continuous' }]
+          // 嘗試要求連續對焦，並且將畫面放大 1.5倍 (zoom)
+          advanced: [{ focusMode: "continuous" }, { torch: true },{ zoom: 1.5 }]
         }
       };
       await html5QrCode.start(
