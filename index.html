@@ -92,9 +92,9 @@
     #cameraSelect option   { color: #333; background: #fff; }
     #cameraSelect:disabled { opacity: 0.6; }
 
-    /* ★ 手電筒按鈕 */
+    /* ★ 手電筒按鈕與錯誤動畫 */
     #btn-torch {
-      display: none; /* 預設隱藏，確認支援後顯示 */
+      display: none; 
       flex-shrink: 0;
       padding: 8px 14px;
       font-size: 18px;
@@ -109,6 +109,18 @@
       background: #ffc107;
       color: #000;
       border-color: #ffc107;
+    }
+    @keyframes shake {
+      0%   { transform: translateX(0); }
+      25%  { transform: translateX(-4px); }
+      50%  { transform: translateX(4px); }
+      75%  { transform: translateX(-4px); }
+      100% { transform: translateX(0); }
+    }
+    .error-shake {
+      animation: shake 0.3s;
+      background: #dc3545 !important; 
+      border-color: #dc3545 !important;
     }
 
     /* 1D / 2D 切換按鈕 */
@@ -160,7 +172,6 @@
       top: 0; left: 0;
       width: 100%; height: 100%;
     }
-    
     #quagga-reader video, #quagga-reader canvas {
       width: 100%; height: 100%;
       object-fit: cover;
@@ -369,7 +380,7 @@
     let cameras           = [];
     let scanMode          = '1D'; 
     let currentCameraId   = null;
-    let isTorchOn         = false; // ★ 記錄燈光狀態
+    let isTorchOn         = false;
 
     // ── i18n 翻譯表 ──
     const translations = {
@@ -471,7 +482,6 @@
       guide.classList.toggle('mode-2d', scanMode === '2D');
     }
 
-    // ── 語言切換 ──
     function changeLanguage() {
       currentLang = document.getElementById('langSelector').value;
       const t = translations[currentLang];
@@ -498,22 +508,35 @@
       document.getElementById('ui-btn-mode-2d').innerText      = t.btnMode2D;
     }
 
-    // ── ★ 手電筒 (Torch) 控制 ──
+    // ── ★ 手電筒 (Torch) 嚴謹控制與錯誤捕捉 ──
     async function checkTorchCapability(track) {
       const btnTorch = document.getElementById('btn-torch');
+      
       if (track && typeof track.getCapabilities === 'function') {
         const capabilities = track.getCapabilities();
-        if (capabilities.torch) {
+
+        // 判斷 torch 是否支援 (部分 Android 需要檢查 fillLightMode)
+        const isTorchSupported = !!capabilities.torch || 
+                                 ('fillLightMode' in capabilities && capabilities.fillLightMode.includes('flash'));
+
+        if (isTorchSupported) {
           btnTorch.style.display = 'block';
-          // 套用目前的燈光狀態
-          try {
-            await track.applyConstraints({ advanced: [{ torch: isTorchOn }] });
-            btnTorch.classList.toggle('active', isTorchOn);
-          } catch(e) { console.warn('Torch apply error:', e); }
+          
+          if (isTorchOn) {
+            try {
+              await track.applyConstraints({ advanced: [{ torch: true }] });
+              btnTorch.classList.add('active');
+            } catch(e) { 
+              console.warn('Torch restore failed:', e);
+              isTorchOn = false;
+              btnTorch.classList.remove('active');
+            }
+          }
           return;
         }
       }
-      // 不支援手電筒時隱藏按鈕
+      
+      // 不支援時隱藏
       btnTorch.style.display = 'none';
       isTorchOn = false;
       btnTorch.classList.remove('active');
@@ -521,26 +544,43 @@
 
     async function toggleTorch() {
       let track = null;
-      if (scanMode === '2D' && isHtml5QrScanning) {
-        // Html5Qrcode 取 Video Track 的官方 API 方式
-        const capabilities = html5QrCode.getRunningTrackCameraCapabilities();
-        if (capabilities && capabilities.torchFeature) {
-           isTorchOn = !isTorchOn;
-           capabilities.torchFeature().apply(isTorchOn);
-           document.getElementById('btn-torch').classList.toggle('active', isTorchOn);
-           return;
-        }
-      } else if (scanMode === '1D' && isQuaggaScanning) {
-        // Quagga 取 Track 的方式
-        track = Quagga.CameraAccess.getActiveTrack();
-        if (track && typeof track.applyConstraints === 'function') {
-           isTorchOn = !isTorchOn;
-           try {
-             await track.applyConstraints({ advanced: [{ torch: isTorchOn }] });
+      let targetState = !isTorchOn;
+
+      try {
+        if (scanMode === '2D' && isHtml5QrScanning) {
+          const capabilities = html5QrCode.getRunningTrackCameraCapabilities();
+          if (capabilities && capabilities.torchFeature) {
+             await capabilities.torchFeature().apply(targetState);
+             isTorchOn = targetState;
              document.getElementById('btn-torch').classList.toggle('active', isTorchOn);
-           } catch(e) { console.warn('Torch failed:', e); }
-           return;
+             return; 
+          } else {
+             // Fallback: 官方 API 無法使用時，直接尋找 video stream
+             const video = document.querySelector('#html5qr-reader video');
+             if (video && video.srcObject) {
+               track = video.srcObject.getVideoTracks()[0];
+             }
+          }
+        } else if (scanMode === '1D' && isQuaggaScanning) {
+          track = Quagga.CameraAccess.getActiveTrack();
         }
+
+        // 若上述取得 track 成功，直接觸發 applyConstraints
+        if (track && typeof track.applyConstraints === 'function') {
+           await track.applyConstraints({ advanced: [{ torch: targetState }] });
+           isTorchOn = targetState;
+           document.getElementById('btn-torch').classList.toggle('active', isTorchOn);
+        }
+
+      } catch (err) {
+        console.warn('Torch toggle error:', err);
+        // 觸發錯誤動畫提示
+        const btn = document.getElementById('btn-torch');
+        btn.classList.add('error-shake');
+        setTimeout(() => btn.classList.remove('error-shake'), 300);
+
+        // 狀態回滾 (確保 UI 與實際硬體一致)
+        document.getElementById('btn-torch').classList.toggle('active', isTorchOn);
       }
     }
 
@@ -553,7 +593,7 @@
       if (document.getElementById('scanner-container').style.display === 'flex') {
         const select = document.getElementById('cameraSelect');
         select.disabled = true;
-        document.getElementById('btn-torch').style.display = 'none'; // 切換中先隱藏
+        document.getElementById('btn-torch').style.display = 'none'; // 切換引擎中先隱藏
         try {
           if (currentCameraId) {
             await startEngine(currentCameraId);
@@ -605,9 +645,7 @@
         await html5QrCode.start({ deviceId: { exact: cameraId } }, config, onScanSuccess);
         isHtml5QrScanning = true;
         
-        // ★ 偵測 2D 引擎手電筒支援
         setTimeout(() => {
-           const track = html5QrCode.getRunningTrackCameraCapabilities();
            const videoTrack = document.querySelector('#html5qr-reader video')?.srcObject?.getVideoTracks()[0];
            if (videoTrack) checkTorchCapability(videoTrack);
         }, 800);
@@ -637,7 +675,6 @@
             if (err) { reject(err); return; }
             Quagga.start();
             isQuaggaScanning = true;
-            // ★ 偵測 1D 引擎手電筒支援
             setTimeout(() => checkTorchCapability(Quagga.CameraAccess.getActiveTrack()), 800);
             resolve();
           });
@@ -784,7 +821,7 @@
 
     async function stopScan() {
       document.getElementById('scanner-container').style.display = 'none';
-      isTorchOn = false; // 離開掃描畫面時，重置燈光狀態
+      isTorchOn = false; 
       document.getElementById('btn-torch').classList.remove('active');
       await stopActiveEngines();
     }
