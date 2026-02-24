@@ -64,8 +64,8 @@
       box-sizing: border-box;
     }
 
-    /* 鏡頭選單 */
-    .camera-selector-wrap {
+    /* 頂部操作列 (鏡頭選單 + 手電筒) */
+    .top-controls-wrap {
       flex-shrink: 0;
       width: 100%;
       max-width: 520px;
@@ -73,6 +73,12 @@
       align-items: center;
       gap: 8px;
       margin-bottom: 8px;
+    }
+    .camera-selector-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
     .camera-selector-wrap label {
       color: #fff; font-size: 14px;
@@ -85,6 +91,25 @@
     }
     #cameraSelect option   { color: #333; background: #fff; }
     #cameraSelect:disabled { opacity: 0.6; }
+
+    /* ★ 手電筒按鈕 */
+    #btn-torch {
+      display: none; /* 預設隱藏，確認支援後顯示 */
+      flex-shrink: 0;
+      padding: 8px 14px;
+      font-size: 18px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.4);
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #btn-torch.active {
+      background: #ffc107;
+      color: #000;
+      border-color: #ffc107;
+    }
 
     /* 1D / 2D 切換按鈕 */
     .scan-mode-wrap {
@@ -136,7 +161,6 @@
       width: 100%; height: 100%;
     }
     
-    /* 確保 Quagga 產生的影片與 Canvas 正確覆蓋 */
     #quagga-reader video, #quagga-reader canvas {
       width: 100%; height: 100%;
       object-fit: cover;
@@ -276,11 +300,17 @@
   </div>
 
   <div id="scanner-container">
-    <div class="camera-selector-wrap">
-      <label id="ui-camera-label">切換鏡頭：</label>
-      <select id="cameraSelect" onchange="switchCamera(this.value)" disabled>
-        <option id="ui-camera-loading-opt">載入鏡頭清單...</option>
-      </select>
+    
+    <!-- 頂部操作列 -->
+    <div class="top-controls-wrap">
+      <div class="camera-selector-wrap">
+        <label id="ui-camera-label">切換鏡頭：</label>
+        <select id="cameraSelect" onchange="switchCamera(this.value)" disabled>
+          <option id="ui-camera-loading-opt">載入鏡頭清單...</option>
+        </select>
+      </div>
+      <!-- ★ 手電筒按鈕 -->
+      <button id="btn-torch" onclick="toggleTorch()" title="開關手電筒">🔦</button>
     </div>
 
     <!-- 1D / 2D 雙引擎切換 -->
@@ -332,13 +362,14 @@
     // 防抖機制變數 (Quagga 專用)
     let quaggaLastCode    = "";
     let quaggaCodeCount   = 0;
-    const REQUIRED_MATCHES = 2; // 需要連續幾次掃出同樣字串才算成功
+    const REQUIRED_MATCHES = 2; 
 
-    let currentTarget   = null;
-    let currentLang     = 'zh-TW';
-    let cameras         = [];
-    let scanMode        = '1D'; // 預設改為 1D 優先（依工作常態）
-    let currentCameraId = null;
+    let currentTarget     = null;
+    let currentLang       = 'zh-TW';
+    let cameras           = [];
+    let scanMode          = '1D'; 
+    let currentCameraId   = null;
+    let isTorchOn         = false; // ★ 記錄燈光狀態
 
     // ── i18n 翻譯表 ──
     const translations = {
@@ -467,16 +498,62 @@
       document.getElementById('ui-btn-mode-2d').innerText      = t.btnMode2D;
     }
 
+    // ── ★ 手電筒 (Torch) 控制 ──
+    async function checkTorchCapability(track) {
+      const btnTorch = document.getElementById('btn-torch');
+      if (track && typeof track.getCapabilities === 'function') {
+        const capabilities = track.getCapabilities();
+        if (capabilities.torch) {
+          btnTorch.style.display = 'block';
+          // 套用目前的燈光狀態
+          try {
+            await track.applyConstraints({ advanced: [{ torch: isTorchOn }] });
+            btnTorch.classList.toggle('active', isTorchOn);
+          } catch(e) { console.warn('Torch apply error:', e); }
+          return;
+        }
+      }
+      // 不支援手電筒時隱藏按鈕
+      btnTorch.style.display = 'none';
+      isTorchOn = false;
+      btnTorch.classList.remove('active');
+    }
+
+    async function toggleTorch() {
+      let track = null;
+      if (scanMode === '2D' && isHtml5QrScanning) {
+        // Html5Qrcode 取 Video Track 的官方 API 方式
+        const capabilities = html5QrCode.getRunningTrackCameraCapabilities();
+        if (capabilities && capabilities.torchFeature) {
+           isTorchOn = !isTorchOn;
+           capabilities.torchFeature().apply(isTorchOn);
+           document.getElementById('btn-torch').classList.toggle('active', isTorchOn);
+           return;
+        }
+      } else if (scanMode === '1D' && isQuaggaScanning) {
+        // Quagga 取 Track 的方式
+        track = Quagga.CameraAccess.getActiveTrack();
+        if (track && typeof track.applyConstraints === 'function') {
+           isTorchOn = !isTorchOn;
+           try {
+             await track.applyConstraints({ advanced: [{ torch: isTorchOn }] });
+             document.getElementById('btn-torch').classList.toggle('active', isTorchOn);
+           } catch(e) { console.warn('Torch failed:', e); }
+           return;
+        }
+      }
+    }
+
     // ── 切換 1D / 2D 引擎觸發器 ──
     async function setScanMode(mode) {
       if (scanMode === mode) return;
       scanMode = mode;
       applyScanModeUI();
       
-      // 如果掃描視窗處於開啟狀態，直接無縫重啟另一個引擎
       if (document.getElementById('scanner-container').style.display === 'flex') {
         const select = document.getElementById('cameraSelect');
         select.disabled = true;
+        document.getElementById('btn-torch').style.display = 'none'; // 切換中先隱藏
         try {
           if (currentCameraId) {
             await startEngine(currentCameraId);
@@ -502,19 +579,18 @@
         try { Quagga.stop(); } catch (e) { console.warn(e); }
         isQuaggaScanning = false;
       }
+      document.getElementById('btn-torch').style.display = 'none';
     }
 
-    // ── 啟動核心引擎 (根據目前 scanMode 決定用誰) ──
+    // ── 啟動核心引擎 ──
     async function startEngine(cameraId) {
       await stopActiveEngines();
       currentCameraId = cameraId;
 
-      // 切換對應的 DOM 顯示狀態
       document.getElementById('html5qr-reader').style.display = scanMode === '2D' ? 'block' : 'none';
       document.getElementById('quagga-reader').style.display  = scanMode === '1D' ? 'block' : 'none';
 
       if (scanMode === '2D') {
-        // --- HTML5-QRCode 處理 2D ---
         if (!html5QrCode) html5QrCode = new Html5Qrcode('html5qr-reader');
         const config = {
           fps: 15,
@@ -528,12 +604,18 @@
         };
         await html5QrCode.start({ deviceId: { exact: cameraId } }, config, onScanSuccess);
         isHtml5QrScanning = true;
+        
+        // ★ 偵測 2D 引擎手電筒支援
+        setTimeout(() => {
+           const track = html5QrCode.getRunningTrackCameraCapabilities();
+           const videoTrack = document.querySelector('#html5qr-reader video')?.srcObject?.getVideoTracks()[0];
+           if (videoTrack) checkTorchCapability(videoTrack);
+        }, 800);
 
       } else {
-        // --- Quagga2 處理 1D ---
         quaggaLastCode = "";
         quaggaCodeCount = 0;
-        document.getElementById('quagga-reader').innerHTML = ''; // 清理殘留 video
+        document.getElementById('quagga-reader').innerHTML = ''; 
 
         return new Promise((resolve, reject) => {
           Quagga.init({
@@ -548,28 +630,22 @@
               }
             },
             decoder: {
-              // 涵蓋大多數工業/倉儲/零售的 1D 條碼
-              readers: [
-                "code_128_reader", "ean_reader", "ean_8_reader", 
-                "code_39_reader", "code_39_vin_reader", 
-                "codabar_reader", "upc_reader", "upc_e_reader", "i2of5_reader"
-              ]
+              readers: ["code_128_reader", "ean_reader", "ean_8_reader", "code_39_reader", "code_39_vin_reader", "codabar_reader", "upc_reader", "upc_e_reader", "i2of5_reader"]
             },
-            locate: true // 啟動畫面定位輔助（綠色追蹤線）
+            locate: true
           }, function(err) {
-            if (err) {
-              reject(err);
-              return;
-            }
+            if (err) { reject(err); return; }
             Quagga.start();
             isQuaggaScanning = true;
+            // ★ 偵測 1D 引擎手電筒支援
+            setTimeout(() => checkTorchCapability(Quagga.CameraAccess.getActiveTrack()), 800);
             resolve();
           });
         });
       }
     }
 
-    // ── Fallback 啟動核心引擎 (沒有指定 cameraId 時使用) ──
+    // ── Fallback 啟動 ──
     async function startEngineFallback() {
       await stopActiveEngines();
       currentCameraId = null;
@@ -585,6 +661,10 @@
           onScanSuccess
         );
         isHtml5QrScanning = true;
+        setTimeout(() => {
+           const videoTrack = document.querySelector('#html5qr-reader video')?.srcObject?.getVideoTracks()[0];
+           if (videoTrack) checkTorchCapability(videoTrack);
+        }, 800);
       } else {
         quaggaLastCode = ""; quaggaCodeCount = 0;
         document.getElementById('quagga-reader').innerHTML = '';
@@ -595,25 +675,22 @@
               target: document.querySelector('#quagga-reader'),
               constraints: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }
             },
-            decoder: {
-              readers: ["code_128_reader", "ean_reader", "ean_8_reader", "code_39_reader", "code_39_vin_reader", "codabar_reader", "upc_reader", "upc_e_reader", "i2of5_reader"]
-            },
+            decoder: { readers: ["code_128_reader", "ean_reader", "ean_8_reader", "code_39_reader", "code_39_vin_reader", "codabar_reader", "upc_reader", "upc_e_reader", "i2of5_reader"] },
             locate: true
           }, function(err) {
             if (err) { reject(err); return; }
             Quagga.start();
             isQuaggaScanning = true;
+            setTimeout(() => checkTorchCapability(Quagga.CameraAccess.getActiveTrack()), 800);
             resolve();
           });
         });
       }
     }
 
-    // ── 綁定 Quagga 的全域解碼事件 (含防抖) ──
     Quagga.onDetected((result) => {
       if (!isQuaggaScanning) return;
       const code = result.codeResult.code;
-      // 防抖機制：必須連續 N 幀讀出相同字串才認定為真，避免 1D 誤讀
       if (code === quaggaLastCode) {
         quaggaCodeCount++;
         if (quaggaCodeCount >= REQUIRED_MATCHES) {
@@ -625,18 +702,14 @@
       }
     });
 
-    // ── Quagga 繪製定位綠線 (酷炫視覺效果) ──
     Quagga.onProcessed(function(result) {
       if (!isQuaggaScanning) return;
       var drawingCtx = Quagga.canvas.ctx.overlay,
           drawingCanvas = Quagga.canvas.dom.overlay;
-
       if (result) {
         if (result.boxes) {
           drawingCtx.clearRect(0, 0, parseInt(drawingCanvas.getAttribute("width")), parseInt(drawingCanvas.getAttribute("height")));
-          result.boxes.filter(function (box) {
-              return box !== result.box;
-          }).forEach(function (box) {
+          result.boxes.filter(box => box !== result.box).forEach(box => {
               Quagga.ImageDebug.drawPath(box, {x: 0, y: 1}, drawingCtx, {color: "green", lineWidth: 2});
           });
         }
@@ -649,12 +722,11 @@
       }
     });
 
-
-    // ── 使用者手動切換鏡頭下拉選單 ──
     async function switchCamera(cameraId) {
       if (!cameraId) return;
       const select = document.getElementById('cameraSelect');
       select.disabled = true;
+      document.getElementById('btn-torch').style.display = 'none';
       try {
         await startEngine(cameraId);
       } catch (err) {
@@ -664,7 +736,6 @@
       }
     }
 
-    // ── 主程式：按下掃描按鈕 ──
     async function startScan(target) {
       currentTarget = target;
       document.getElementById('scanner-container').style.display = 'flex';
@@ -674,7 +745,6 @@
       select.innerHTML = `<option>${t.cameraLoading}</option>`;
       select.disabled  = true;
 
-      // 取得鏡頭清單 (使用 html5QrCode 內建的 API 來抓硬體清單比較方便)
       try {
         cameras = await Html5Qrcode.getCameras();
       } catch (err) {
@@ -691,7 +761,6 @@
         });
         select.disabled = false;
 
-        // 優先選後置鏡頭
         const backCam = cameras.find(c => /back|rear|environment|後/i.test(c.label));
         const defaultCam = backCam || cameras[cameras.length - 1];
         select.value = defaultCam.id;
@@ -703,7 +772,6 @@
           await stopScan();
         }
       } else {
-        // fallback：抓不到清單就用預設 facingMode
         select.innerHTML = `<option value="">${t.cameraDefault} (預設)</option>`;
         try {
           await startEngineFallback();
@@ -714,18 +782,18 @@
       }
     }
 
-    // ── 停止與清理 ──
     async function stopScan() {
       document.getElementById('scanner-container').style.display = 'none';
+      isTorchOn = false; // 離開掃描畫面時，重置燈光狀態
+      document.getElementById('btn-torch').classList.remove('active');
       await stopActiveEngines();
     }
 
     function onScanSuccess(decodedText) {
       if (navigator.vibrate) navigator.vibrate(200);
-      stopScan(); // 停止引擎並關閉 UI
+      stopScan(); 
       
-      // 填入對應欄位
-      const extracted = decodedText; // 可在此替換您的 extractSpecificText 邏輯
+      const extracted = decodedText; 
       if (currentTarget === 'A') {
         document.getElementById('fieldA').value = extracted;
       } else if (currentTarget === 'B') {
@@ -734,7 +802,6 @@
       checkAutoCompare();
     }
 
-    // ── 清除與比對邏輯 ──
     function clearField(target) {
       if (target === 'A') document.getElementById('fieldA').value = '';
       if (target === 'B') document.getElementById('fieldB').value = '';
