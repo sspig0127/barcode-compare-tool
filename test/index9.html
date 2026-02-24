@@ -477,4 +477,412 @@
       document.getElementById('btn-mode-1d').classList.toggle('active', scanMode === '1D');
       document.getElementById('btn-mode-2d').classList.toggle('active', scanMode === '2D');
 
-      const guide
+      const guide = document.getElementById('scanGuide');
+      guide.classList.toggle('mode-1d', scanMode === '1D');
+      guide.classList.toggle('mode-2d', scanMode === '2D');
+    }
+
+    function changeLanguage() {
+      currentLang = document.getElementById('langSelector').value;
+      const t = translations[currentLang];
+      document.getElementById('ui-title').innerText            = t.title;
+      document.getElementById('ui-mode-label').innerText       = t.modeLabel;
+      document.getElementById('ui-mode-auto').innerText        = t.modeAuto;
+      document.getElementById('ui-mode-manual').innerText      = t.modeManual;
+      document.getElementById('ui-field-a-label').innerText    = t.fieldALabel;
+      document.getElementById('ui-field-b-label').innerText    = t.fieldBLabel;
+      document.getElementById('fieldA').placeholder            = t.placeholder;
+      document.getElementById('fieldB').placeholder            = t.placeholder;
+      document.getElementById('ui-btn-scan-a').innerText       = t.btnScanA;
+      document.getElementById('ui-btn-scan-b').innerText       = t.btnScanB;
+      document.getElementById('ui-btn-clear-a').innerText      = t.btnClearA;
+      document.getElementById('ui-btn-clear-b').innerText      = t.btnClearB;
+      document.getElementById('ui-btn-clear-all').innerText    = t.btnClearAll;
+      document.getElementById('ui-btn-compare').innerText      = t.btnCompare;
+      document.getElementById('ui-btn-cancel-scan').innerText  = t.btnCancelScan;
+      document.getElementById('ui-modal-row1').innerText       = t.modalRow1;
+      document.getElementById('ui-modal-row2').innerText       = t.modalRow2;
+      document.getElementById('ui-modal-close').innerText      = t.modalClose;
+      document.getElementById('ui-camera-label').innerText     = t.cameraLabel;
+      document.getElementById('ui-btn-mode-1d').innerText      = t.btnMode1D;
+      document.getElementById('ui-btn-mode-2d').innerText      = t.btnMode2D;
+    }
+
+    // ── ★ 手電筒 (Torch) 嚴謹控制與錯誤捕捉 ──
+    async function checkTorchCapability(track) {
+      const btnTorch = document.getElementById('btn-torch');
+      
+      if (track && typeof track.getCapabilities === 'function') {
+        const capabilities = track.getCapabilities();
+
+        // 判斷 torch 是否支援 (部分 Android 需要檢查 fillLightMode)
+        const isTorchSupported = !!capabilities.torch || 
+                                 ('fillLightMode' in capabilities && capabilities.fillLightMode.includes('flash'));
+
+        if (isTorchSupported) {
+          btnTorch.style.display = 'block';
+          
+          if (isTorchOn) {
+            try {
+              await track.applyConstraints({ advanced: [{ torch: true }] });
+              btnTorch.classList.add('active');
+            } catch(e) { 
+              console.warn('Torch restore failed:', e);
+              isTorchOn = false;
+              btnTorch.classList.remove('active');
+            }
+          }
+          return;
+        }
+      }
+      
+      // 不支援時隱藏
+      btnTorch.style.display = 'none';
+      isTorchOn = false;
+      btnTorch.classList.remove('active');
+    }
+
+    async function toggleTorch() {
+      let track = null;
+      let targetState = !isTorchOn;
+
+      try {
+        if (scanMode === '2D' && isHtml5QrScanning) {
+          const capabilities = html5QrCode.getRunningTrackCameraCapabilities();
+          if (capabilities && capabilities.torchFeature) {
+             await capabilities.torchFeature().apply(targetState);
+             isTorchOn = targetState;
+             document.getElementById('btn-torch').classList.toggle('active', isTorchOn);
+             return; 
+          } else {
+             // Fallback: 官方 API 無法使用時，直接尋找 video stream
+             const video = document.querySelector('#html5qr-reader video');
+             if (video && video.srcObject) {
+               track = video.srcObject.getVideoTracks()[0];
+             }
+          }
+        } else if (scanMode === '1D' && isQuaggaScanning) {
+          track = Quagga.CameraAccess.getActiveTrack();
+        }
+
+        // 若上述取得 track 成功，直接觸發 applyConstraints
+        if (track && typeof track.applyConstraints === 'function') {
+           await track.applyConstraints({ advanced: [{ torch: targetState }] });
+           isTorchOn = targetState;
+           document.getElementById('btn-torch').classList.toggle('active', isTorchOn);
+        }
+
+      } catch (err) {
+        console.warn('Torch toggle error:', err);
+        // 觸發錯誤動畫提示
+        const btn = document.getElementById('btn-torch');
+        btn.classList.add('error-shake');
+        setTimeout(() => btn.classList.remove('error-shake'), 300);
+
+        // 狀態回滾 (確保 UI 與實際硬體一致)
+        document.getElementById('btn-torch').classList.toggle('active', isTorchOn);
+      }
+    }
+
+    // ── 切換 1D / 2D 引擎觸發器 ──
+    async function setScanMode(mode) {
+      if (scanMode === mode) return;
+      scanMode = mode;
+      applyScanModeUI();
+      
+      if (document.getElementById('scanner-container').style.display === 'flex') {
+        const select = document.getElementById('cameraSelect');
+        select.disabled = true;
+        document.getElementById('btn-torch').style.display = 'none'; // 切換引擎中先隱藏
+        try {
+          if (currentCameraId) {
+            await startEngine(currentCameraId);
+          } else {
+            await startEngineFallback();
+          }
+        } catch (err) {
+          alert(translations[currentLang].alertCamFail + '\n' + err);
+          await stopScan();
+        } finally {
+          select.disabled = false;
+        }
+      }
+    }
+
+    // ── 全域停止所有相機引擎 ──
+    async function stopActiveEngines() {
+      if (isHtml5QrScanning && html5QrCode) {
+        try { await html5QrCode.stop(); } catch (e) { console.warn(e); }
+        isHtml5QrScanning = false;
+      }
+      if (isQuaggaScanning) {
+        try { Quagga.stop(); } catch (e) { console.warn(e); }
+        isQuaggaScanning = false;
+      }
+      document.getElementById('btn-torch').style.display = 'none';
+    }
+
+    // ── 啟動核心引擎 ──
+    async function startEngine(cameraId) {
+      await stopActiveEngines();
+      currentCameraId = cameraId;
+
+      document.getElementById('html5qr-reader').style.display = scanMode === '2D' ? 'block' : 'none';
+      document.getElementById('quagga-reader').style.display  = scanMode === '1D' ? 'block' : 'none';
+
+      if (scanMode === '2D') {
+        if (!html5QrCode) html5QrCode = new Html5Qrcode('html5qr-reader');
+        const config = {
+          fps: 15,
+          useBarCodeDetectorIfSupported: true,
+          videoConstraints: {
+            deviceId: { exact: cameraId },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            advanced: [{ focusMode: 'continuous' }]
+          }
+        };
+        await html5QrCode.start({ deviceId: { exact: cameraId } }, config, onScanSuccess);
+        isHtml5QrScanning = true;
+        
+        setTimeout(() => {
+           const videoTrack = document.querySelector('#html5qr-reader video')?.srcObject?.getVideoTracks()[0];
+           if (videoTrack) checkTorchCapability(videoTrack);
+        }, 800);
+
+      } else {
+        quaggaLastCode = "";
+        quaggaCodeCount = 0;
+        document.getElementById('quagga-reader').innerHTML = ''; 
+
+        return new Promise((resolve, reject) => {
+          Quagga.init({
+            inputStream: {
+              name: "Live",
+              type: "LiveStream",
+              target: document.querySelector('#quagga-reader'),
+              constraints: {
+                deviceId: { exact: cameraId },
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+              }
+            },
+            decoder: {
+              readers: ["code_128_reader", "ean_reader", "ean_8_reader", "code_39_reader", "code_39_vin_reader", "codabar_reader", "upc_reader", "upc_e_reader", "i2of5_reader"]
+            },
+            locate: true
+          }, function(err) {
+            if (err) { reject(err); return; }
+            Quagga.start();
+            isQuaggaScanning = true;
+            setTimeout(() => checkTorchCapability(Quagga.CameraAccess.getActiveTrack()), 800);
+            resolve();
+          });
+        });
+      }
+    }
+
+    // ── Fallback 啟動 ──
+    async function startEngineFallback() {
+      await stopActiveEngines();
+      currentCameraId = null;
+
+      document.getElementById('html5qr-reader').style.display = scanMode === '2D' ? 'block' : 'none';
+      document.getElementById('quagga-reader').style.display  = scanMode === '1D' ? 'block' : 'none';
+
+      if (scanMode === '2D') {
+        if (!html5QrCode) html5QrCode = new Html5Qrcode('html5qr-reader');
+        await html5QrCode.start(
+          { facingMode: 'environment' },
+          { fps: 15, useBarCodeDetectorIfSupported: true },
+          onScanSuccess
+        );
+        isHtml5QrScanning = true;
+        setTimeout(() => {
+           const videoTrack = document.querySelector('#html5qr-reader video')?.srcObject?.getVideoTracks()[0];
+           if (videoTrack) checkTorchCapability(videoTrack);
+        }, 800);
+      } else {
+        quaggaLastCode = ""; quaggaCodeCount = 0;
+        document.getElementById('quagga-reader').innerHTML = '';
+        return new Promise((resolve, reject) => {
+          Quagga.init({
+            inputStream: {
+              name: "Live", type: "LiveStream",
+              target: document.querySelector('#quagga-reader'),
+              constraints: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }
+            },
+            decoder: { readers: ["code_128_reader", "ean_reader", "ean_8_reader", "code_39_reader", "code_39_vin_reader", "codabar_reader", "upc_reader", "upc_e_reader", "i2of5_reader"] },
+            locate: true
+          }, function(err) {
+            if (err) { reject(err); return; }
+            Quagga.start();
+            isQuaggaScanning = true;
+            setTimeout(() => checkTorchCapability(Quagga.CameraAccess.getActiveTrack()), 800);
+            resolve();
+          });
+        });
+      }
+    }
+
+    Quagga.onDetected((result) => {
+      if (!isQuaggaScanning) return;
+      const code = result.codeResult.code;
+      if (code === quaggaLastCode) {
+        quaggaCodeCount++;
+        if (quaggaCodeCount >= REQUIRED_MATCHES) {
+          onScanSuccess(code);
+        }
+      } else {
+        quaggaLastCode = code;
+        quaggaCodeCount = 1;
+      }
+    });
+
+    Quagga.onProcessed(function(result) {
+      if (!isQuaggaScanning) return;
+      var drawingCtx = Quagga.canvas.ctx.overlay,
+          drawingCanvas = Quagga.canvas.dom.overlay;
+      if (result) {
+        if (result.boxes) {
+          drawingCtx.clearRect(0, 0, parseInt(drawingCanvas.getAttribute("width")), parseInt(drawingCanvas.getAttribute("height")));
+          result.boxes.filter(box => box !== result.box).forEach(box => {
+              Quagga.ImageDebug.drawPath(box, {x: 0, y: 1}, drawingCtx, {color: "green", lineWidth: 2});
+          });
+        }
+        if (result.box) {
+          Quagga.ImageDebug.drawPath(result.box, {x: 0, y: 1}, drawingCtx, {color: "#00F", lineWidth: 2});
+        }
+        if (result.codeResult && result.codeResult.code) {
+          Quagga.ImageDebug.drawPath(result.line, {x: 'x', y: 'y'}, drawingCtx, {color: 'red', lineWidth: 3});
+        }
+      }
+    });
+
+    async function switchCamera(cameraId) {
+      if (!cameraId) return;
+      const select = document.getElementById('cameraSelect');
+      select.disabled = true;
+      document.getElementById('btn-torch').style.display = 'none';
+      try {
+        await startEngine(cameraId);
+      } catch (err) {
+        alert(translations[currentLang].alertCamSwitch + '\n' + err);
+      } finally {
+        select.disabled = false;
+      }
+    }
+
+    async function startScan(target) {
+      currentTarget = target;
+      document.getElementById('scanner-container').style.display = 'flex';
+      
+      const t = translations[currentLang];
+      const select = document.getElementById('cameraSelect');
+      select.innerHTML = `<option>${t.cameraLoading}</option>`;
+      select.disabled  = true;
+
+      try {
+        cameras = await Html5Qrcode.getCameras();
+      } catch (err) {
+        cameras = [];
+      }
+
+      if (cameras.length > 0) {
+        select.innerHTML = '';
+        cameras.forEach((cam, idx) => {
+          const opt = document.createElement('option');
+          opt.value = cam.id;
+          opt.text  = cam.label || `${t.cameraDefault} ${idx + 1}`;
+          select.appendChild(opt);
+        });
+        select.disabled = false;
+
+        const backCam = cameras.find(c => /back|rear|environment|後/i.test(c.label));
+        const defaultCam = backCam || cameras[cameras.length - 1];
+        select.value = defaultCam.id;
+
+        try {
+          await startEngine(defaultCam.id);
+        } catch (err) {
+          alert(t.alertCamFail + '\n' + err);
+          await stopScan();
+        }
+      } else {
+        select.innerHTML = `<option value="">${t.cameraDefault} (預設)</option>`;
+        try {
+          await startEngineFallback();
+        } catch (err) {
+          alert(t.alertCamFail + '\n' + err);
+          await stopScan();
+        }
+      }
+    }
+
+    async function stopScan() {
+      document.getElementById('scanner-container').style.display = 'none';
+      isTorchOn = false; 
+      document.getElementById('btn-torch').classList.remove('active');
+      await stopActiveEngines();
+    }
+
+    function onScanSuccess(decodedText) {
+      if (navigator.vibrate) navigator.vibrate(200);
+      stopScan(); 
+      
+      const extracted = decodedText; 
+      if (currentTarget === 'A') {
+        document.getElementById('fieldA').value = extracted;
+      } else if (currentTarget === 'B') {
+        document.getElementById('fieldB').value = extracted;
+      }
+      checkAutoCompare();
+    }
+
+    function clearField(target) {
+      if (target === 'A') document.getElementById('fieldA').value = '';
+      if (target === 'B') document.getElementById('fieldB').value = '';
+    }
+    function clearAll() { clearField('A'); clearField('B'); }
+
+    function checkAutoCompare() {
+      const mode = document.querySelector('input[name="compareMode"]:checked').value;
+      const valA = document.getElementById('fieldA').value;
+      const valB = document.getElementById('fieldB').value;
+      if (mode === 'auto' && valA !== '' && valB !== '') {
+        showCompareResult(valA, valB);
+      }
+    }
+
+    function manualCompare() {
+      const valA = document.getElementById('fieldA').value;
+      const valB = document.getElementById('fieldB').value;
+      if (!valA || !valB) {
+        alert(translations[currentLang].alertEmpty);
+        return;
+      }
+      showCompareResult(valA, valB);
+    }
+
+    function showCompareResult(valA, valB) {
+      const isMatch = (valA === valB);
+      const t = translations[currentLang];
+      document.getElementById('modalValA').innerText = valA;
+      document.getElementById('modalValB').innerText = valB;
+      const el = document.getElementById('modalResult');
+      el.innerText  = isMatch ? t.matchSuccess : t.matchFail;
+      el.className  = 'result-text ' + (isMatch ? 'match' : 'mismatch');
+      document.getElementById('resultModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('resultModal').style.display = 'none';
+    }
+
+    window.onload = () => {
+      changeLanguage();
+      applyScanModeUI();
+    };
+  </script>
+</body>
+</html>
