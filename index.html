@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>條碼比對小工具</title>
+    <!-- 引入 html5-qrcode 掃碼套件 -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+        .card {
+            background: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+        }
+        .title {
+            text-align: center;
+            margin-top: 0;
+            color: #333;
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+            background-color: #fafafa;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        button {
+            flex: 1;
+            padding: 12px;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-scan { background-color: #0d6efd; color: white; }
+        .btn-clear { background-color: #6c757d; color: white; }
+        .btn-clear-all { background-color: #dc3545; color: white; }
+        .btn-compare { background-color: #198754; color: white; }
+        
+        /* 掃描區塊 */
+        #scanner-container {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        #reader { width: 100%; max-width: 500px; }
+        .btn-cancel-scan {
+            margin-top: 20px;
+            background-color: #dc3545;
+            color: white;
+            width: 80%;
+            max-width: 300px;
+        }
+
+        /* 彈出視窗 Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 85%;
+            max-width: 400px;
+            text-align: center;
+            font-size: 18px;
+            line-height: 1.6;
+        }
+        .modal-content p { margin: 10px 0; word-break: break-all; }
+        .result-text { font-size: 24px; font-weight: bold; margin-top: 15px; }
+        .match { color: #198754; }
+        .mismatch { color: #dc3545; }
+        
+        .mode-selector {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #e9ecef;
+            border-radius: 8px;
+        }
+        .mode-selector label { font-weight: normal; margin: 0; }
+    </style>
+</head>
+<body>
+
+    <h2 class="title">條碼比對小工具</h2>
+
+    <!-- 模式選擇 -->
+    <div class="card">
+        <label>比對模式：</label>
+        <div class="mode-selector">
+            <label><input type="radio" name="compareMode" value="auto" checked> 自動比對</label>
+            <label><input type="radio" name="compareMode" value="manual"> 手動點選比對</label>
+        </div>
+    </div>
+
+    <!-- 欄位 A -->
+    <div class="card">
+        <label>A 欄位</label>
+        <input type="text" id="fieldA" placeholder="點擊掃描或手動輸入" onclick="startScan('A')" readonly>
+        <div class="button-group">
+            <button class="btn-scan" onclick="startScan('A')">📷 掃描 A</button>
+            <button class="btn-clear" onclick="clearField('A')">清除 A</button>
+        </div>
+    </div>
+
+    <!-- 欄位 B -->
+    <div class="card">
+        <label>B 欄位</label>
+        <input type="text" id="fieldB" placeholder="點擊掃描或手動輸入" onclick="startScan('B')" readonly>
+        <div class="button-group">
+            <button class="btn-scan" onclick="startScan('B')">📷 掃描 B</button>
+            <button class="btn-clear" onclick="clearField('B')">清除 B</button>
+        </div>
+    </div>
+
+    <!-- 全域操作 -->
+    <div class="card">
+        <div class="button-group">
+            <button class="btn-clear-all" onclick="clearAll()">🗑️ 清除全部 (A與B)</button>
+            <button class="btn-compare" onclick="manualCompare()">🔍 手動比對</button>
+        </div>
+    </div>
+
+    <!-- 掃描相機介面 -->
+    <div id="scanner-container">
+        <div id="reader"></div>
+        <button class="btn-cancel-scan" onclick="stopScan()">取消掃描</button>
+    </div>
+
+    <!-- 比對結果彈出視窗 -->
+    <div id="resultModal" class="modal">
+        <div class="modal-content">
+            <p><strong>第一列 (A欄位)</strong><br><span id="modalValA"></span></p>
+            <p><strong>第二列 (B欄位)</strong><br><span id="modalValB"></span></p>
+            <hr>
+            <p id="modalResult" class="result-text"></p>
+            <button class="btn-clear" style="width: 100%; margin-top: 15px;" onclick="closeModal()">關閉</button>
+        </div>
+    </div>
+
+    <script>
+        let html5QrCode;
+        let currentTarget = null;
+
+        // ★★★ 核心：取出條碼中特定區段的文字 ★★★
+        function extractSpecificText(rawText) {
+            // 你可以在這裡撰寫你要擷取特定字串的邏輯
+            // 範例 1: 只取前 10 個字元
+            // return rawText.substring(0, 10);
+            
+            // 範例 2: 使用正規表達式取出數字
+            // const match = rawText.match(/\d+/);
+            // return match ? match[0] : rawText;
+
+            // 預設：不擷取，直接回傳掃描到的完整文字
+            return rawText; 
+        }
+
+        // 啟動相機掃描
+        function startScan(target) {
+            currentTarget = target;
+            document.getElementById('scanner-container').style.display = 'flex';
+
+            if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode("reader");
+            }
+            
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+            // 開啟後置鏡頭
+            html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
+            .catch(err => {
+                alert("啟動相機失敗，請確認是否已授予相機權限：" + err);
+                stopScan();
+            });
+        }
+
+        // 停止掃描
+        function stopScan() {
+            document.getElementById('scanner-container').style.display = 'none';
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop().then(ignore => {}).catch(err => {});
+            }
+        }
+
+        // 掃描成功的回調函數
+        function onScanSuccess(decodedText, decodedResult) {
+            // 震動回饋 (如果裝置支援)
+            if (navigator.vibrate) navigator.vibrate(200);
+            
+            stopScan(); // 停止相機
+            
+            // 呼叫函式擷取特定區段
+            const extractedText = extractSpecificText(decodedText);
+            
+            // 填入對應的欄位
+            if (currentTarget === 'A') {
+                document.getElementById('fieldA').value = extractedText;
+            } else if (currentTarget === 'B') {
+                document.getElementById('fieldB').value = extractedText;
+            }
+            
+            // 檢查是否需要自動比對
+            checkAutoCompare();
+        }
+
+        // 清除單一欄位
+        function clearField(target) {
+            if (target === 'A') document.getElementById('fieldA').value = '';
+            if (target === 'B') document.getElementById('fieldB').value = '';
+        }
+
+        // 清除全部欄位
+        function clearAll() {
+            clearField('A');
+            clearField('B');
+        }
+
+        // 判斷是否為自動比對
+        function checkAutoCompare() {
+            const mode = document.querySelector('input[name="compareMode"]:checked').value;
+            const valA = document.getElementById('fieldA').value;
+            const valB = document.getElementById('fieldB').value;
+
+            // 如果設定為自動比對，且兩個欄位都有值，就直接比對
+            if (mode === 'auto' && valA !== '' && valB !== '') {
+                showCompareResult(valA, valB);
+            }
+        }
+
+        // 手動比對按鈕觸發
+        function manualCompare() {
+            const valA = document.getElementById('fieldA').value;
+            const valB = document.getElementById('fieldB').value;
+
+            if (valA === '' || valB === '') {
+                alert("請確認 A 欄位與 B 欄位皆已取得條碼內容！");
+                return;
+            }
+            showCompareResult(valA, valB);
+        }
+
+        // 顯示比對結果的彈出視窗
+        function showCompareResult(valA, valB) {
+            const isMatch = (valA === valB);
+            
+            document.getElementById('modalValA').innerText = valA;
+            document.getElementById('modalValB').innerText = valB;
+            
+            const resultElement = document.getElementById('modalResult');
+            if (isMatch) {
+                resultElement.innerText = "✅ 比對成功 (相符)";
+                resultElement.className = "result-text match";
+            } else {
+                resultElement.innerText = "❌ 比對失敗 (不相符)";
+                resultElement.className = "result-text mismatch";
+            }
+
+            // 顯示 Modal
+            document.getElementById('resultModal').style.display = 'flex';
+        }
+
+        // 關閉彈出視窗
+        function closeModal() {
+            document.getElementById('resultModal').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
