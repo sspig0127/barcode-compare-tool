@@ -36,7 +36,7 @@ Quagga2 在讀取 1D 條碼時非常靈敏，為了避免把雜訊誤認為條�
 ```javascript
 // 預設需要連續 2 次掃出同樣字串才算成功 (數字越大越嚴謹，但掃描體感會稍微變慢)
 const REQUIRED_MATCHES = 2; 
-
+```
 
 ### 2. 如何新增其他語言（如：印尼文、泰文）？
 
@@ -57,18 +57,13 @@ const translations = {
 新增完畢後，記得在 HTML 的 <select id="langSelector"> 中加入對應的 <option value="id">Bahasa Indonesia</option> 即可完成擴充！
 
 
-## 📦 使用技術
-
-- 
-- HTML5 / CSS3 / JavaScript
-- [html5-qrcode](https://www.google.com/url?sa=E&q=https%3A%2F%2Fgithub.com%2Fmebjas%2Fhtml5-qrcode) - 開源條碼掃描套件
 
 📦 使用技術
-HTML5 / CSS3 / Vanilla JavaScript
+- HTML5 / CSS3 / Vanilla JavaScript
 
-[html5-qrcode - 負責 2D / QR Code 高效解析](https://www.google.com/url?sa=E&q=https%3A%2F%2Fgithub.com%2Fmebjas%2Fhtml5-qrcode)
+- [html5-qrcode - 負責 2D / QR Code 高效解析](https://www.google.com/url?sa=E&q=https%3A%2F%2Fgithub.com%2Fmebjas%2Fhtml5-qrcode)
 
-[Quagga2 (@ericblade/quagga2) - 負責 1D 條碼解析與即時定位追蹤](https://github.com/ericblade/quagga2)
+- [Quagga2 (@ericblade/quagga2) - 負責 1D 條碼解析與即時定位追蹤](https://github.com/ericblade/quagga2)
 
 
 ## 📄 授權條款 (License)
