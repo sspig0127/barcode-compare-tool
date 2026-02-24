@@ -332,6 +332,9 @@
             // 掃描器與進階影像設定
             const scanConfig = { 
                 fps: 15,
+             // 💡 關鍵魔法：如果手機瀏覽器支援硬體級掃描，就優先使用它！
+    useBarCodeDetectorIfSupported: true, 
+               
                 // 將高解析度與對焦等進階設定，包在 videoConstraints 裡面
                 videoConstraints: {
                     facingMode: "environment",
