@@ -4,7 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>條碼比對工具</title>
+  
+  <!-- 載入雙引擎 SDK -->
   <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.12.1/dist/quagga.min.js"></script>
+  
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -54,7 +58,6 @@
       z-index: 1000;
       flex-direction: column;
       align-items: center;
-      /* ★ 移除 justify-content:center，避免布局不穩/被擠 */
       padding: 8px 10px;
       padding-top:    calc(8px + env(safe-area-inset-top,    0px));
       padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
@@ -83,7 +86,7 @@
     #cameraSelect option   { color: #333; background: #fff; }
     #cameraSelect:disabled { opacity: 0.6; }
 
-    /* ★ 1D / 2D 切換：改成更穩定的 segmented control */
+    /* 1D / 2D 切換按鈕 */
     .scan-mode-wrap {
       flex-shrink: 0;
       width: 100%;
@@ -108,6 +111,7 @@
       color: rgba(255,255,255,0.75);
       cursor: pointer;
       line-height: 1.1;
+      transition: background 0.2s, color 0.2s;
     }
     .btn-mode.active {
       background: #ffffff;
@@ -115,7 +119,7 @@
       border-color: #ffffff;
     }
 
-    /* 相機預覽容器（含 overlay） */
+    /* 雙引擎容器 */
     #reader-wrap {
       width: 100%;
       max-width: 520px;
@@ -124,42 +128,49 @@
       position: relative;
       overflow: hidden;
       border-radius: 10px;
+      background: #000;
     }
-    #reader {
-      width: 100%;
-      height: 100%;
+    #html5qr-reader, #quagga-reader {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+    }
+    
+    /* 確保 Quagga 產生的影片與 Canvas 正確覆蓋 */
+    #quagga-reader video, #quagga-reader canvas {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      position: absolute;
+      top: 0; left: 0;
     }
 
-    /* ★ 自製輔助框：不使用 qrbox（避免框外變暗），只疊 UI */
+    /* 自製輔助 UI 框 */
     #scanGuide {
       position: absolute;
-      left: 50%;
-      top: 50%;
+      left: 50%; top: 50%;
       transform: translate(-50%, -50%);
       pointer-events: none;
       box-sizing: border-box;
       border: 1px solid rgba(255,255,255,0.12);
       border-radius: 12px;
       filter: drop-shadow(0 0 6px rgba(0,0,0,0.35));
+      z-index: 10;
     }
-    /* 2D：正方形 */
     #scanGuide.mode-2d {
       width: min(72%, 340px);
       aspect-ratio: 1 / 1;
       height: auto;
     }
-    /* 1D：寬扁長條（高度別太小，避免使用者對不到） */
     #scanGuide.mode-1d {
       width: min(90%, 460px);
       height: clamp(110px, 20vh, 160px);
       border-radius: 10px;
     }
 
-    /* 四角 */
+    /* 四角點綴 */
     .corner {
       position: absolute;
-      width: 26px;
-      height: 26px;
+      width: 26px; height: 26px;
       box-sizing: border-box;
       border: 4px solid rgba(0, 229, 255, 0.9);
       filter: drop-shadow(0 0 6px rgba(0,229,255,0.18));
@@ -169,13 +180,11 @@
     .corner.bl { left: -2px; bottom: -2px; border-right: 0; border-top: 0; border-bottom-left-radius: 10px; }
     .corner.br { right: -2px; bottom: -2px; border-left: 0; border-top: 0; border-bottom-right-radius: 10px; }
 
-    /* 1D 掃描線（只在 1D 顯示） */
+    /* 1D 掃描線 */
     .scan-line {
       position: absolute;
-      left: 10px;
-      right: 10px;
-      top: 50%;
-      height: 2px;
+      left: 10px; right: 10px;
+      top: 50%; height: 2px;
       background: rgba(255, 70, 70, 0.85);
       box-shadow: 0 0 10px rgba(255, 70, 70, 0.35);
       transform: translateY(-50%);
@@ -186,13 +195,9 @@
     /* 取消按鈕 */
     .btn-cancel-scan {
       flex-shrink: 0;
-      margin-top: 10px;
-      margin-bottom: 4px;
-      background-color: #dc3545;
-      color: white;
-      width: auto;
-      padding: 8px 22px;
-      font-size: 14px;
+      margin-top: 10px; margin-bottom: 4px;
+      background-color: #dc3545; color: white;
+      width: auto; padding: 8px 22px; font-size: 14px;
     }
 
     /* ── 結果 Modal ── */
@@ -212,7 +217,6 @@
     .match    { color: #198754; }
     .mismatch { color: #dc3545; }
 
-    /* ── 比對模式 ── */
     .mode-selector {
       display: flex; justify-content: space-around;
       margin-bottom: 15px; padding: 10px;
@@ -272,7 +276,6 @@
   </div>
 
   <div id="scanner-container">
-
     <div class="camera-selector-wrap">
       <label id="ui-camera-label">切換鏡頭：</label>
       <select id="cameraSelect" onchange="switchCamera(this.value)" disabled>
@@ -280,8 +283,9 @@
       </select>
     </div>
 
+    <!-- 1D / 2D 雙引擎切換 -->
     <div class="scan-mode-wrap" role="group" aria-label="Scan mode">
-      <button class="btn-mode" id="btn-mode-1d" onclick="setScanMode('1D')" type="button">
+      <button class="btn-mode active" id="btn-mode-1d" onclick="setScanMode('1D')" type="button">
         <span id="ui-btn-mode-1d">1D 條碼</span>
       </button>
       <button class="btn-mode" id="btn-mode-2d" onclick="setScanMode('2D')" type="button">
@@ -290,10 +294,13 @@
     </div>
 
     <div id="reader-wrap">
-      <div id="reader"></div>
+      <!-- Html5-qrcode 容器 (2D) -->
+      <div id="html5qr-reader" style="display:none;"></div>
+      <!-- Quagga2 容器 (1D) -->
+      <div id="quagga-reader" style="display:none;"></div>
 
-      <!-- ★ 自製輔助框（不會讓畫面變暗） -->
-      <div id="scanGuide" class="mode-2d" aria-hidden="true">
+      <!-- 輔助框 UI -->
+      <div id="scanGuide" class="mode-1d" aria-hidden="true">
         <span class="corner tl"></span>
         <span class="corner tr"></span>
         <span class="corner bl"></span>
@@ -317,13 +324,23 @@
   </div>
 
   <script>
-    let html5QrCode     = null;
+    // ── 系統全域變數 ──
+    let html5QrCode       = null;
+    let isHtml5QrScanning = false;
+    let isQuaggaScanning  = false;
+    
+    // 防抖機制變數 (Quagga 專用)
+    let quaggaLastCode    = "";
+    let quaggaCodeCount   = 0;
+    const REQUIRED_MATCHES = 2; // 需要連續幾次掃出同樣字串才算成功
+
     let currentTarget   = null;
     let currentLang     = 'zh-TW';
     let cameras         = [];
-    let scanMode        = '2D';   // '1D' | '2D'
+    let scanMode        = '1D'; // 預設改為 1D 優先（依工作常態）
     let currentCameraId = null;
 
+    // ── i18n 翻譯表 ──
     const translations = {
       'zh-TW': {
         title         : '條碼比對工具',
@@ -351,7 +368,7 @@
         cameraLoading : '載入鏡頭清單...',
         cameraDefault : '鏡頭',
         alertCamSwitch: '切換鏡頭失敗：',
-        btnMode1D     : '1D 條碼',
+        btnMode1D     : '1D 條碼 (Quagga)',
         btnMode2D     : '2D / QR Code',
       },
       'en': {
@@ -423,13 +440,7 @@
       guide.classList.toggle('mode-2d', scanMode === '2D');
     }
 
-    function setScanMode(mode) {
-      if (scanMode === mode) return;
-      scanMode = mode;
-      applyScanModeUI();
-      // 這版不重啟相機：因為我們不再用 qrbox，切換只影響輔助框 UI。
-    }
-
+    // ── 語言切換 ──
     function changeLanguage() {
       currentLang = document.getElementById('langSelector').value;
       const t = translations[currentLang];
@@ -456,41 +467,196 @@
       document.getElementById('ui-btn-mode-2d').innerText      = t.btnMode2D;
     }
 
-    function extractSpecificText(rawText) {
-      return rawText;
+    // ── 切換 1D / 2D 引擎觸發器 ──
+    async function setScanMode(mode) {
+      if (scanMode === mode) return;
+      scanMode = mode;
+      applyScanModeUI();
+      
+      // 如果掃描視窗處於開啟狀態，直接無縫重啟另一個引擎
+      if (document.getElementById('scanner-container').style.display === 'flex') {
+        const select = document.getElementById('cameraSelect');
+        select.disabled = true;
+        try {
+          if (currentCameraId) {
+            await startEngine(currentCameraId);
+          } else {
+            await startEngineFallback();
+          }
+        } catch (err) {
+          alert(translations[currentLang].alertCamFail + '\n' + err);
+          await stopScan();
+        } finally {
+          select.disabled = false;
+        }
+      }
     }
 
-    async function startScanWithCamera(cameraId) {
-      if (html5QrCode && html5QrCode.isScanning) {
-        await html5QrCode.stop();
+    // ── 全域停止所有相機引擎 ──
+    async function stopActiveEngines() {
+      if (isHtml5QrScanning && html5QrCode) {
+        try { await html5QrCode.stop(); } catch (e) { console.warn(e); }
+        isHtml5QrScanning = false;
       }
+      if (isQuaggaScanning) {
+        try { Quagga.stop(); } catch (e) { console.warn(e); }
+        isQuaggaScanning = false;
+      }
+    }
+
+    // ── 啟動核心引擎 (根據目前 scanMode 決定用誰) ──
+    async function startEngine(cameraId) {
+      await stopActiveEngines();
       currentCameraId = cameraId;
 
-      const config = {
-        fps: 15,
-        useBarCodeDetectorIfSupported: true,
-        // ★ 不使用 qrbox：避免框外遮罩讓畫面變暗，也避免框太小導致更難掃
-        videoConstraints: {
-          deviceId: { exact: cameraId },
-          width:  { ideal: 1280 },
-          height: { ideal: 720  },
-          advanced: [{ focusMode: 'continuous' }, { torch: true }, { zoom: 2.0 }]
-        }
-      };
+      // 切換對應的 DOM 顯示狀態
+      document.getElementById('html5qr-reader').style.display = scanMode === '2D' ? 'block' : 'none';
+      document.getElementById('quagga-reader').style.display  = scanMode === '1D' ? 'block' : 'none';
 
-      await html5QrCode.start(
-        { deviceId: { exact: cameraId } },
-        config,
-        onScanSuccess
-      );
+      if (scanMode === '2D') {
+        // --- HTML5-QRCode 處理 2D ---
+        if (!html5QrCode) html5QrCode = new Html5Qrcode('html5qr-reader');
+        const config = {
+          fps: 15,
+          useBarCodeDetectorIfSupported: true,
+          videoConstraints: {
+            deviceId: { exact: cameraId },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            advanced: [{ focusMode: 'continuous' }]
+          }
+        };
+        await html5QrCode.start({ deviceId: { exact: cameraId } }, config, onScanSuccess);
+        isHtml5QrScanning = true;
+
+      } else {
+        // --- Quagga2 處理 1D ---
+        quaggaLastCode = "";
+        quaggaCodeCount = 0;
+        document.getElementById('quagga-reader').innerHTML = ''; // 清理殘留 video
+
+        return new Promise((resolve, reject) => {
+          Quagga.init({
+            inputStream: {
+              name: "Live",
+              type: "LiveStream",
+              target: document.querySelector('#quagga-reader'),
+              constraints: {
+                deviceId: { exact: cameraId },
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+              }
+            },
+            decoder: {
+              // 涵蓋大多數工業/倉儲/零售的 1D 條碼
+              readers: [
+                "code_128_reader", "ean_reader", "ean_8_reader", 
+                "code_39_reader", "code_39_vin_reader", 
+                "codabar_reader", "upc_reader", "upc_e_reader", "i2of5_reader"
+              ]
+            },
+            locate: true // 啟動畫面定位輔助（綠色追蹤線）
+          }, function(err) {
+            if (err) {
+              reject(err);
+              return;
+            }
+            Quagga.start();
+            isQuaggaScanning = true;
+            resolve();
+          });
+        });
+      }
     }
 
+    // ── Fallback 啟動核心引擎 (沒有指定 cameraId 時使用) ──
+    async function startEngineFallback() {
+      await stopActiveEngines();
+      currentCameraId = null;
+
+      document.getElementById('html5qr-reader').style.display = scanMode === '2D' ? 'block' : 'none';
+      document.getElementById('quagga-reader').style.display  = scanMode === '1D' ? 'block' : 'none';
+
+      if (scanMode === '2D') {
+        if (!html5QrCode) html5QrCode = new Html5Qrcode('html5qr-reader');
+        await html5QrCode.start(
+          { facingMode: 'environment' },
+          { fps: 15, useBarCodeDetectorIfSupported: true },
+          onScanSuccess
+        );
+        isHtml5QrScanning = true;
+      } else {
+        quaggaLastCode = ""; quaggaCodeCount = 0;
+        document.getElementById('quagga-reader').innerHTML = '';
+        return new Promise((resolve, reject) => {
+          Quagga.init({
+            inputStream: {
+              name: "Live", type: "LiveStream",
+              target: document.querySelector('#quagga-reader'),
+              constraints: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }
+            },
+            decoder: {
+              readers: ["code_128_reader", "ean_reader", "ean_8_reader", "code_39_reader", "code_39_vin_reader", "codabar_reader", "upc_reader", "upc_e_reader", "i2of5_reader"]
+            },
+            locate: true
+          }, function(err) {
+            if (err) { reject(err); return; }
+            Quagga.start();
+            isQuaggaScanning = true;
+            resolve();
+          });
+        });
+      }
+    }
+
+    // ── 綁定 Quagga 的全域解碼事件 (含防抖) ──
+    Quagga.onDetected((result) => {
+      if (!isQuaggaScanning) return;
+      const code = result.codeResult.code;
+      // 防抖機制：必須連續 N 幀讀出相同字串才認定為真，避免 1D 誤讀
+      if (code === quaggaLastCode) {
+        quaggaCodeCount++;
+        if (quaggaCodeCount >= REQUIRED_MATCHES) {
+          onScanSuccess(code);
+        }
+      } else {
+        quaggaLastCode = code;
+        quaggaCodeCount = 1;
+      }
+    });
+
+    // ── Quagga 繪製定位綠線 (酷炫視覺效果) ──
+    Quagga.onProcessed(function(result) {
+      if (!isQuaggaScanning) return;
+      var drawingCtx = Quagga.canvas.ctx.overlay,
+          drawingCanvas = Quagga.canvas.dom.overlay;
+
+      if (result) {
+        if (result.boxes) {
+          drawingCtx.clearRect(0, 0, parseInt(drawingCanvas.getAttribute("width")), parseInt(drawingCanvas.getAttribute("height")));
+          result.boxes.filter(function (box) {
+              return box !== result.box;
+          }).forEach(function (box) {
+              Quagga.ImageDebug.drawPath(box, {x: 0, y: 1}, drawingCtx, {color: "green", lineWidth: 2});
+          });
+        }
+        if (result.box) {
+          Quagga.ImageDebug.drawPath(result.box, {x: 0, y: 1}, drawingCtx, {color: "#00F", lineWidth: 2});
+        }
+        if (result.codeResult && result.codeResult.code) {
+          Quagga.ImageDebug.drawPath(result.line, {x: 'x', y: 'y'}, drawingCtx, {color: 'red', lineWidth: 3});
+        }
+      }
+    });
+
+
+    // ── 使用者手動切換鏡頭下拉選單 ──
     async function switchCamera(cameraId) {
       if (!cameraId) return;
       const select = document.getElementById('cameraSelect');
       select.disabled = true;
       try {
-        await startScanWithCamera(cameraId);
+        await startEngine(cameraId);
       } catch (err) {
         alert(translations[currentLang].alertCamSwitch + '\n' + err);
       } finally {
@@ -498,16 +664,17 @@
       }
     }
 
+    // ── 主程式：按下掃描按鈕 ──
     async function startScan(target) {
       currentTarget = target;
       document.getElementById('scanner-container').style.display = 'flex';
-      if (!html5QrCode) html5QrCode = new Html5Qrcode('reader');
-
-      const t      = translations[currentLang];
+      
+      const t = translations[currentLang];
       const select = document.getElementById('cameraSelect');
       select.innerHTML = `<option>${t.cameraLoading}</option>`;
       select.disabled  = true;
 
+      // 取得鏡頭清單 (使用 html5QrCode 內建的 API 來抓硬體清單比較方便)
       try {
         cameras = await Html5Qrcode.getCameras();
       } catch (err) {
@@ -524,42 +691,41 @@
         });
         select.disabled = false;
 
-        const backCam    = cameras.find(c => /back|rear|environment|後/i.test(c.label));
+        // 優先選後置鏡頭
+        const backCam = cameras.find(c => /back|rear|environment|後/i.test(c.label));
         const defaultCam = backCam || cameras[cameras.length - 1];
         select.value = defaultCam.id;
 
         try {
-          await startScanWithCamera(defaultCam.id);
+          await startEngine(defaultCam.id);
         } catch (err) {
           alert(t.alertCamFail + '\n' + err);
-          stopScan();
+          await stopScan();
         }
       } else {
+        // fallback：抓不到清單就用預設 facingMode
         select.innerHTML = `<option value="">${t.cameraDefault} (預設)</option>`;
         try {
-          await html5QrCode.start(
-            { facingMode: 'environment' },
-            { fps: 15, useBarCodeDetectorIfSupported: true },
-            onScanSuccess
-          );
+          await startEngineFallback();
         } catch (err) {
           alert(t.alertCamFail + '\n' + err);
-          stopScan();
+          await stopScan();
         }
       }
     }
 
-    function stopScan() {
+    // ── 停止與清理 ──
+    async function stopScan() {
       document.getElementById('scanner-container').style.display = 'none';
-      if (html5QrCode && html5QrCode.isScanning) {
-        html5QrCode.stop().catch(err => console.warn('stopScan:', err));
-      }
+      await stopActiveEngines();
     }
 
     function onScanSuccess(decodedText) {
       if (navigator.vibrate) navigator.vibrate(200);
-      stopScan();
-      const extracted = extractSpecificText(decodedText);
+      stopScan(); // 停止引擎並關閉 UI
+      
+      // 填入對應欄位
+      const extracted = decodedText; // 可在此替換您的 extractSpecificText 邏輯
       if (currentTarget === 'A') {
         document.getElementById('fieldA').value = extracted;
       } else if (currentTarget === 'B') {
@@ -568,6 +734,7 @@
       checkAutoCompare();
     }
 
+    // ── 清除與比對邏輯 ──
     function clearField(target) {
       if (target === 'A') document.getElementById('fieldA').value = '';
       if (target === 'B') document.getElementById('fieldB').value = '';
