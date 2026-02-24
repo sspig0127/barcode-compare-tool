@@ -14,17 +14,30 @@
             padding: 15px;
             box-sizing: border-box;
         }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .title {
+            margin: 0;
+            color: #333;
+            font-size: 22px;
+        }
+        .lang-select {
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            background: #fff;
+        }
         .card {
             background: #fff;
             padding: 15px;
             border-radius: 10px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             margin-bottom: 15px;
-        }
-        .title {
-            text-align: center;
-            margin-top: 0;
-            color: #333;
         }
         label {
             font-weight: bold;
@@ -113,86 +126,190 @@
             background: #e9ecef;
             border-radius: 8px;
         }
-        .mode-selector label { font-weight: normal; margin: 0; }
+        .mode-selector label { font-weight: normal; margin: 0; font-size: 15px; }
     </style>
 </head>
 <body>
 
-    <h2 class="title">條碼比對小工具</h2>
+    <div class="header">
+        <h2 class="title" id="ui-title">條碼比對工具</h2>
+        <!-- 語系切換選單 -->
+        <select class="lang-select" id="langSelector" onchange="changeLanguage()">
+            <option value="zh-TW" selected>繁體中文</option>
+            <option value="en">English</option>
+            <option value="vi">Tiếng Việt</option>
+        </select>
+    </div>
 
     <!-- 模式選擇 -->
     <div class="card">
-        <label>比對模式：</label>
+        <label id="ui-mode-label">比對模式：</label>
         <div class="mode-selector">
-            <label><input type="radio" name="compareMode" value="auto" checked> 自動比對</label>
-            <label><input type="radio" name="compareMode" value="manual"> 手動點選比對</label>
+            <label><input type="radio" name="compareMode" value="auto" checked> <span id="ui-mode-auto">自動比對</span></label>
+            <label><input type="radio" name="compareMode" value="manual"> <span id="ui-mode-manual">手動比對</span></label>
         </div>
     </div>
 
     <!-- 欄位 A -->
     <div class="card">
-        <label>A 欄位</label>
+        <label id="ui-field-a-label">A 欄位</label>
         <input type="text" id="fieldA" placeholder="點擊掃描或手動輸入" onclick="startScan('A')" readonly>
         <div class="button-group">
-            <button class="btn-scan" onclick="startScan('A')">📷 掃描 A</button>
-            <button class="btn-clear" onclick="clearField('A')">清除 A</button>
+            <button class="btn-scan" id="ui-btn-scan-a" onclick="startScan('A')">📷 掃描 A</button>
+            <button class="btn-clear" id="ui-btn-clear-a" onclick="clearField('A')">清除 A</button>
         </div>
     </div>
 
     <!-- 欄位 B -->
     <div class="card">
-        <label>B 欄位</label>
+        <label id="ui-field-b-label">B 欄位</label>
         <input type="text" id="fieldB" placeholder="點擊掃描或手動輸入" onclick="startScan('B')" readonly>
         <div class="button-group">
-            <button class="btn-scan" onclick="startScan('B')">📷 掃描 B</button>
-            <button class="btn-clear" onclick="clearField('B')">清除 B</button>
+            <button class="btn-scan" id="ui-btn-scan-b" onclick="startScan('B')">📷 掃描 B</button>
+            <button class="btn-clear" id="ui-btn-clear-b" onclick="clearField('B')">清除 B</button>
         </div>
     </div>
 
     <!-- 全域操作 -->
     <div class="card">
         <div class="button-group">
-            <button class="btn-clear-all" onclick="clearAll()">🗑️ 清除全部 (A與B)</button>
-            <button class="btn-compare" onclick="manualCompare()">🔍 手動比對</button>
+            <button class="btn-clear-all" id="ui-btn-clear-all" onclick="clearAll()">🗑️ 清除全部</button>
+            <button class="btn-compare" id="ui-btn-compare" onclick="manualCompare()">🔍 手動比對</button>
         </div>
     </div>
 
     <!-- 掃描相機介面 -->
     <div id="scanner-container">
         <div id="reader"></div>
-        <button class="btn-cancel-scan" onclick="stopScan()">取消掃描</button>
+        <button class="btn-cancel-scan" id="ui-btn-cancel-scan" onclick="stopScan()">取消掃描</button>
     </div>
 
     <!-- 比對結果彈出視窗 -->
     <div id="resultModal" class="modal">
         <div class="modal-content">
-            <p><strong>第一列 (A欄位)</strong><br><span id="modalValA"></span></p>
-            <p><strong>第二列 (B欄位)</strong><br><span id="modalValB"></span></p>
+            <p><strong id="ui-modal-row1">第一列 (A欄位)</strong><br><span id="modalValA"></span></p>
+            <p><strong id="ui-modal-row2">第二列 (B欄位)</strong><br><span id="modalValB"></span></p>
             <hr>
             <p id="modalResult" class="result-text"></p>
-            <button class="btn-clear" style="width: 100%; margin-top: 15px;" onclick="closeModal()">關閉</button>
+            <button class="btn-clear" id="ui-modal-close" style="width: 100%; margin-top: 15px;" onclick="closeModal()">關閉</button>
         </div>
     </div>
 
     <script>
         let html5QrCode;
         let currentTarget = null;
+        let currentLang = 'zh-TW';
 
-        // ★★★ 核心：取出條碼中特定區段的文字 ★★★
-        function extractSpecificText(rawText) {
-            // 你可以在這裡撰寫你要擷取特定字串的邏輯
-            // 範例 1: 只取前 10 個字元
-            // return rawText.substring(0, 10);
+        // ================= 語系字典 (i18n) =================
+        const translations = {
+            'zh-TW': {
+                title: '條碼比對工具',
+                modeLabel: '比對模式：',
+                modeAuto: '自動比對',
+                modeManual: '手動點選',
+                fieldALabel: 'A 欄位',
+                fieldBLabel: 'B 欄位',
+                placeholder: '點擊掃描或手動輸入',
+                btnScanA: '📷 掃描 A',
+                btnScanB: '📷 掃描 B',
+                btnClearA: '清除 A',
+                btnClearB: '清除 B',
+                btnClearAll: '🗑️ 清除全部',
+                btnCompare: '🔍 執行比對',
+                btnCancelScan: '取消掃描',
+                modalRow1: '第一列 (A欄位)',
+                modalRow2: '第二列 (B欄位)',
+                modalClose: '關閉',
+                matchSuccess: '✅ 比對成功 (相符)',
+                matchFail: '❌ 比對失敗 (不相符)',
+                alertEmpty: '請確認 A 欄位與 B 欄位皆已取得條碼內容！',
+                alertCamFail: '啟動相機失敗，請確認權限：'
+            },
+            'en': {
+                title: 'Barcode Matcher',
+                modeLabel: 'Mode:',
+                modeAuto: 'Auto Match',
+                modeManual: 'Manual',
+                fieldALabel: 'Field A',
+                fieldBLabel: 'Field B',
+                placeholder: 'Tap to scan or type',
+                btnScanA: '📷 Scan A',
+                btnScanB: '📷 Scan B',
+                btnClearA: 'Clear A',
+                btnClearB: 'Clear B',
+                btnClearAll: '🗑️ Clear All',
+                btnCompare: '🔍 Compare',
+                btnCancelScan: 'Cancel Scan',
+                modalRow1: 'Row 1 (Field A)',
+                modalRow2: 'Row 2 (Field B)',
+                modalClose: 'Close',
+                matchSuccess: '✅ Match (Success)',
+                matchFail: '❌ Mismatch (Fail)',
+                alertEmpty: 'Please ensure both fields have barcode data!',
+                alertCamFail: 'Camera failed. Check permissions: '
+            },
+            'vi': {
+                title: 'Công cụ so sánh mã vạch',
+                modeLabel: 'Chế độ:',
+                modeAuto: 'Tự động',
+                modeManual: 'Thủ công',
+                fieldALabel: 'Trường A',
+                fieldBLabel: 'Trường B',
+                placeholder: 'Nhấn để quét',
+                btnScanA: '📷 Quét A',
+                btnScanB: '📷 Quét B',
+                btnClearA: 'Xóa A',
+                btnClearB: 'Xóa B',
+                btnClearAll: '🗑️ Xóa tất cả',
+                btnCompare: '🔍 So sánh',
+                btnCancelScan: 'Hủy quét',
+                modalRow1: 'Hàng 1 (Trường A)',
+                modalRow2: 'Hàng 2 (Trường B)',
+                modalClose: 'Đóng',
+                matchSuccess: '✅ Khớp (Thành công)',
+                matchFail: '❌ Không khớp (Thất bại)',
+                alertEmpty: 'Vui lòng đảm bảo cả hai trường đều có dữ liệu!',
+                alertCamFail: 'Lỗi máy ảnh. Kiểm tra quyền: '
+            }
+        };
+
+        // 切換語系功能
+        function changeLanguage() {
+            currentLang = document.getElementById('langSelector').value;
+            const t = translations[currentLang];
+
+            document.getElementById('ui-title').innerText = t.title;
+            document.getElementById('ui-mode-label').innerText = t.modeLabel;
+            document.getElementById('ui-mode-auto').innerText = t.modeAuto;
+            document.getElementById('ui-mode-manual').innerText = t.modeManual;
+            document.getElementById('ui-field-a-label').innerText = t.fieldALabel;
+            document.getElementById('ui-field-b-label').innerText = t.fieldBLabel;
             
-            // 範例 2: 使用正規表達式取出數字
-            // const match = rawText.match(/\d+/);
-            // return match ? match[0] : rawText;
+            document.getElementById('fieldA').placeholder = t.placeholder;
+            document.getElementById('fieldB').placeholder = t.placeholder;
 
+            document.getElementById('ui-btn-scan-a').innerText = t.btnScanA;
+            document.getElementById('ui-btn-scan-b').innerText = t.btnScanB;
+            document.getElementById('ui-btn-clear-a').innerText = t.btnClearA;
+            document.getElementById('ui-btn-clear-b').innerText = t.btnClearB;
+            document.getElementById('ui-btn-clear-all').innerText = t.btnClearAll;
+            document.getElementById('ui-btn-compare').innerText = t.btnCompare;
+            document.getElementById('ui-btn-cancel-scan').innerText = t.btnCancelScan;
+            
+            document.getElementById('ui-modal-row1').innerText = t.modalRow1;
+            document.getElementById('ui-modal-row2').innerText = t.modalRow2;
+            document.getElementById('ui-modal-close').innerText = t.modalClose;
+        }
+
+        // ================= 核心邏輯 =================
+
+        // 取出條碼中特定區段的文字
+        function extractSpecificText(rawText) {
             // 預設：不擷取，直接回傳掃描到的完整文字
             return rawText; 
         }
 
-        // 啟動相機掃描
+        // 啟動相機掃描 (已包含一維條碼優化設定)
         function startScan(target) {
             currentTarget = target;
             document.getElementById('scanner-container').style.display = 'flex';
@@ -201,11 +318,25 @@
                 html5QrCode = new Html5Qrcode("reader");
             }
             
-            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-            // 開啟後置鏡頭
-            html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
+            // 相機硬體要求 (提高解析度)
+            const cameraConfig = {
+                facingMode: "environment",
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                advanced: [{ focusMode: "continuous" }]
+            };
+
+            // 掃描器參數 (稍微提高每秒掃描幀數，並且不限制方形框框，全畫面掃描更適合一維條碼)
+            const scanConfig = { 
+                fps: 15,
+                // 若想要恢復掃描框，可以取消下方註解：
+                // qrbox: { width: 300, height: 150 } 
+            };
+
+            // 啟動相機
+            html5QrCode.start(cameraConfig, scanConfig, onScanSuccess)
             .catch(err => {
-                alert("啟動相機失敗，請確認是否已授予相機權限：" + err);
+                alert(translations[currentLang].alertCamFail + err);
                 stopScan();
             });
         }
@@ -220,85 +351,78 @@
 
         // 掃描成功的回調函數
         function onScanSuccess(decodedText, decodedResult) {
-            // 震動回饋 (如果裝置支援)
             if (navigator.vibrate) navigator.vibrate(200);
+            stopScan();
             
-            stopScan(); // 停止相機
-            
-            // 呼叫函式擷取特定區段
             const extractedText = extractSpecificText(decodedText);
             
-            // 填入對應的欄位
             if (currentTarget === 'A') {
                 document.getElementById('fieldA').value = extractedText;
             } else if (currentTarget === 'B') {
                 document.getElementById('fieldB').value = extractedText;
             }
             
-            // 檢查是否需要自動比對
             checkAutoCompare();
         }
 
-        // 清除單一欄位
         function clearField(target) {
             if (target === 'A') document.getElementById('fieldA').value = '';
             if (target === 'B') document.getElementById('fieldB').value = '';
         }
 
-        // 清除全部欄位
         function clearAll() {
             clearField('A');
             clearField('B');
         }
 
-        // 判斷是否為自動比對
         function checkAutoCompare() {
             const mode = document.querySelector('input[name="compareMode"]:checked').value;
             const valA = document.getElementById('fieldA').value;
             const valB = document.getElementById('fieldB').value;
 
-            // 如果設定為自動比對，且兩個欄位都有值，就直接比對
             if (mode === 'auto' && valA !== '' && valB !== '') {
                 showCompareResult(valA, valB);
             }
         }
 
-        // 手動比對按鈕觸發
         function manualCompare() {
             const valA = document.getElementById('fieldA').value;
             const valB = document.getElementById('fieldB').value;
 
             if (valA === '' || valB === '') {
-                alert("請確認 A 欄位與 B 欄位皆已取得條碼內容！");
+                alert(translations[currentLang].alertEmpty);
                 return;
             }
             showCompareResult(valA, valB);
         }
 
-        // 顯示比對結果的彈出視窗
         function showCompareResult(valA, valB) {
             const isMatch = (valA === valB);
+            const t = translations[currentLang];
             
             document.getElementById('modalValA').innerText = valA;
             document.getElementById('modalValB').innerText = valB;
             
             const resultElement = document.getElementById('modalResult');
             if (isMatch) {
-                resultElement.innerText = "✅ 比對成功 (相符)";
+                resultElement.innerText = t.matchSuccess;
                 resultElement.className = "result-text match";
             } else {
-                resultElement.innerText = "❌ 比對失敗 (不相符)";
+                resultElement.innerText = t.matchFail;
                 resultElement.className = "result-text mismatch";
             }
 
-            // 顯示 Modal
             document.getElementById('resultModal').style.display = 'flex';
         }
 
-        // 關閉彈出視窗
         function closeModal() {
             document.getElementById('resultModal').style.display = 'none';
         }
+
+        // 頁面載入時初始化語系
+        window.onload = () => {
+            changeLanguage();
+        };
     </script>
 </body>
 </html>
