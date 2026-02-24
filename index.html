@@ -54,27 +54,18 @@
       z-index: 1000;
       flex-direction: column;
       align-items: center;
-      /* justify-content: center ← 已移除，避免遮蓋鏡頭選單 */
+      /* ★ 移除 justify-content:center，避免布局不穩/被擠 */
       padding: 8px 10px;
       padding-top:    calc(8px + env(safe-area-inset-top,    0px));
       padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
       box-sizing: border-box;
     }
 
-    /* 相機預覽填滿中間空間 */
-    #reader {
-      width: 100%;
-      max-width: 500px;
-      flex: 1;
-      min-height: 0;
-      overflow: hidden;
-    }
-
-    /* 鏡頭選單固定在頂部 */
+    /* 鏡頭選單 */
     .camera-selector-wrap {
       flex-shrink: 0;
       width: 100%;
-      max-width: 500px;
+      max-width: 520px;
       display: flex;
       align-items: center;
       gap: 8px;
@@ -86,22 +77,122 @@
     }
     #cameraSelect {
       flex: 1; padding: 8px 10px; font-size: 14px;
-      border-radius: 6px; border: 1px solid rgba(255,255,255,0.4);
-      background: rgba(255,255,255,0.15); color: #fff;
+      border-radius: 6px; border: 1px solid rgba(255,255,255,0.35);
+      background: rgba(255,255,255,0.12); color: #fff;
     }
     #cameraSelect option   { color: #333; background: #fff; }
     #cameraSelect:disabled { opacity: 0.6; }
 
-    /* ★ 取消按鈕：縮小尺寸，固定在底部 */
+    /* ★ 1D / 2D 切換：改成更穩定的 segmented control */
+    .scan-mode-wrap {
+      flex-shrink: 0;
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      gap: 6px;
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.25);
+      background: rgba(255,255,255,0.08);
+      margin-bottom: 10px;
+      box-sizing: border-box;
+    }
+    .btn-mode {
+      flex: 1 1 0;
+      padding: 8px 10px;
+      font-size: 13px;
+      font-weight: bold;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: rgba(255,255,255,0.75);
+      cursor: pointer;
+      line-height: 1.1;
+    }
+    .btn-mode.active {
+      background: #ffffff;
+      color: #1a1a1a;
+      border-color: #ffffff;
+    }
+
+    /* 相機預覽容器（含 overlay） */
+    #reader-wrap {
+      width: 100%;
+      max-width: 520px;
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      overflow: hidden;
+      border-radius: 10px;
+    }
+    #reader {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ★ 自製輔助框：不使用 qrbox（避免框外變暗），只疊 UI */
+    #scanGuide {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      box-sizing: border-box;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      filter: drop-shadow(0 0 6px rgba(0,0,0,0.35));
+    }
+    /* 2D：正方形 */
+    #scanGuide.mode-2d {
+      width: min(72%, 340px);
+      aspect-ratio: 1 / 1;
+      height: auto;
+    }
+    /* 1D：寬扁長條（高度別太小，避免使用者對不到） */
+    #scanGuide.mode-1d {
+      width: min(90%, 460px);
+      height: clamp(110px, 20vh, 160px);
+      border-radius: 10px;
+    }
+
+    /* 四角 */
+    .corner {
+      position: absolute;
+      width: 26px;
+      height: 26px;
+      box-sizing: border-box;
+      border: 4px solid rgba(0, 229, 255, 0.9);
+      filter: drop-shadow(0 0 6px rgba(0,229,255,0.18));
+    }
+    .corner.tl { left: -2px; top: -2px; border-right: 0; border-bottom: 0; border-top-left-radius: 10px; }
+    .corner.tr { right: -2px; top: -2px; border-left: 0; border-bottom: 0; border-top-right-radius: 10px; }
+    .corner.bl { left: -2px; bottom: -2px; border-right: 0; border-top: 0; border-bottom-left-radius: 10px; }
+    .corner.br { right: -2px; bottom: -2px; border-left: 0; border-top: 0; border-bottom-right-radius: 10px; }
+
+    /* 1D 掃描線（只在 1D 顯示） */
+    .scan-line {
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      top: 50%;
+      height: 2px;
+      background: rgba(255, 70, 70, 0.85);
+      box-shadow: 0 0 10px rgba(255, 70, 70, 0.35);
+      transform: translateY(-50%);
+      display: none;
+    }
+    #scanGuide.mode-1d .scan-line { display: block; }
+
+    /* 取消按鈕 */
     .btn-cancel-scan {
       flex-shrink: 0;
-      margin-top: 8px;
+      margin-top: 10px;
       margin-bottom: 4px;
       background-color: #dc3545;
       color: white;
-      width: auto;       /* 依文字內容自適應，不撐滿 */
-      padding: 8px 28px; /* 覆寫全域 button 的 12px */
-      font-size: 14px;   /* 覆寫全域 button 的 16px */
+      width: auto;
+      padding: 8px 22px;
+      font-size: 14px;
     }
 
     /* ── 結果 Modal ── */
@@ -132,7 +223,6 @@
 </head>
 <body>
 
-  <!-- 頁首：標題 + 語言選擇 -->
   <div class="header">
     <h2 class="title" id="ui-title">條碼比對工具</h2>
     <select class="lang-select" id="langSelector" onchange="changeLanguage()">
@@ -142,7 +232,6 @@
     </select>
   </div>
 
-  <!-- 比對模式 -->
   <div class="card">
     <label id="ui-mode-label">比對模式：</label>
     <div class="mode-selector">
@@ -157,7 +246,6 @@
     </div>
   </div>
 
-  <!-- A 欄位 -->
   <div class="card">
     <label id="ui-field-a-label">A 欄位</label>
     <input type="text" id="fieldA" placeholder="" oninput="checkAutoCompare()">
@@ -167,7 +255,6 @@
     </div>
   </div>
 
-  <!-- B 欄位 -->
   <div class="card">
     <label id="ui-field-b-label">B 欄位</label>
     <input type="text" id="fieldB" placeholder="" oninput="checkAutoCompare()">
@@ -177,7 +264,6 @@
     </div>
   </div>
 
-  <!-- 操作按鈕列 -->
   <div class="card">
     <div class="button-group">
       <button class="btn-clear-all" id="ui-btn-clear-all" onclick="clearAll()">🗑️ 清除全部</button>
@@ -185,20 +271,40 @@
     </div>
   </div>
 
-  <!-- 掃描器覆蓋層 -->
   <div id="scanner-container">
-    <!-- 鏡頭選擇下拉選單 -->
+
     <div class="camera-selector-wrap">
       <label id="ui-camera-label">切換鏡頭：</label>
       <select id="cameraSelect" onchange="switchCamera(this.value)" disabled>
         <option id="ui-camera-loading-opt">載入鏡頭清單...</option>
       </select>
     </div>
-    <div id="reader"></div>
+
+    <div class="scan-mode-wrap" role="group" aria-label="Scan mode">
+      <button class="btn-mode" id="btn-mode-1d" onclick="setScanMode('1D')" type="button">
+        <span id="ui-btn-mode-1d">1D 條碼</span>
+      </button>
+      <button class="btn-mode" id="btn-mode-2d" onclick="setScanMode('2D')" type="button">
+        <span id="ui-btn-mode-2d">2D / QR Code</span>
+      </button>
+    </div>
+
+    <div id="reader-wrap">
+      <div id="reader"></div>
+
+      <!-- ★ 自製輔助框（不會讓畫面變暗） -->
+      <div id="scanGuide" class="mode-2d" aria-hidden="true">
+        <span class="corner tl"></span>
+        <span class="corner tr"></span>
+        <span class="corner bl"></span>
+        <span class="corner br"></span>
+        <div class="scan-line"></div>
+      </div>
+    </div>
+
     <button class="btn-cancel-scan" id="ui-btn-cancel-scan" onclick="stopScan()">取消掃描</button>
   </div>
 
-  <!-- 比對結果 Modal -->
   <div id="resultModal" class="modal">
     <div class="modal-content">
       <p><strong id="ui-modal-row1">第一列 (A欄位)</strong><br><span id="modalValA"></span></p>
@@ -211,12 +317,13 @@
   </div>
 
   <script>
-    let html5QrCode   = null;
-    let currentTarget = null;
-    let currentLang   = 'zh-TW';
-    let cameras       = [];
+    let html5QrCode     = null;
+    let currentTarget   = null;
+    let currentLang     = 'zh-TW';
+    let cameras         = [];
+    let scanMode        = '2D';   // '1D' | '2D'
+    let currentCameraId = null;
 
-    // ── i18n 翻譯表 ──────────────────────────────────────────────
     const translations = {
       'zh-TW': {
         title         : '條碼比對工具',
@@ -244,6 +351,8 @@
         cameraLoading : '載入鏡頭清單...',
         cameraDefault : '鏡頭',
         alertCamSwitch: '切換鏡頭失敗：',
+        btnMode1D     : '1D 條碼',
+        btnMode2D     : '2D / QR Code',
       },
       'en': {
         title         : 'Barcode Matcher',
@@ -271,6 +380,8 @@
         cameraLoading : 'Loading cameras...',
         cameraDefault : 'Camera',
         alertCamSwitch: 'Camera switch failed: ',
+        btnMode1D     : '1D Barcode',
+        btnMode2D     : '2D / QR Code',
       },
       'vi': {
         title         : 'Công cụ so sánh mã vạch',
@@ -298,54 +409,75 @@
         cameraLoading : 'Đang tải camera...',
         cameraDefault : 'Camera',
         alertCamSwitch: 'Chuyển camera thất bại: ',
+        btnMode1D     : '1D Mã vạch',
+        btnMode2D     : '2D / QR Code',
       }
     };
 
-    // ── 語言切換 ─────────────────────────────────────────────────
+    function applyScanModeUI() {
+      document.getElementById('btn-mode-1d').classList.toggle('active', scanMode === '1D');
+      document.getElementById('btn-mode-2d').classList.toggle('active', scanMode === '2D');
+
+      const guide = document.getElementById('scanGuide');
+      guide.classList.toggle('mode-1d', scanMode === '1D');
+      guide.classList.toggle('mode-2d', scanMode === '2D');
+    }
+
+    function setScanMode(mode) {
+      if (scanMode === mode) return;
+      scanMode = mode;
+      applyScanModeUI();
+      // 這版不重啟相機：因為我們不再用 qrbox，切換只影響輔助框 UI。
+    }
+
     function changeLanguage() {
       currentLang = document.getElementById('langSelector').value;
       const t = translations[currentLang];
-      document.getElementById('ui-title').innerText           = t.title;
-      document.getElementById('ui-mode-label').innerText      = t.modeLabel;
-      document.getElementById('ui-mode-auto').innerText       = t.modeAuto;
-      document.getElementById('ui-mode-manual').innerText     = t.modeManual;
-      document.getElementById('ui-field-a-label').innerText   = t.fieldALabel;
-      document.getElementById('ui-field-b-label').innerText   = t.fieldBLabel;
-      document.getElementById('fieldA').placeholder           = t.placeholder;
-      document.getElementById('fieldB').placeholder           = t.placeholder;
-      document.getElementById('ui-btn-scan-a').innerText      = t.btnScanA;
-      document.getElementById('ui-btn-scan-b').innerText      = t.btnScanB;
-      document.getElementById('ui-btn-clear-a').innerText     = t.btnClearA;
-      document.getElementById('ui-btn-clear-b').innerText     = t.btnClearB;
-      document.getElementById('ui-btn-clear-all').innerText   = t.btnClearAll;
-      document.getElementById('ui-btn-compare').innerText     = t.btnCompare;
-      document.getElementById('ui-btn-cancel-scan').innerText = t.btnCancelScan;
-      document.getElementById('ui-modal-row1').innerText      = t.modalRow1;
-      document.getElementById('ui-modal-row2').innerText      = t.modalRow2;
-      document.getElementById('ui-modal-close').innerText     = t.modalClose;
-      document.getElementById('ui-camera-label').innerText    = t.cameraLabel;
+      document.getElementById('ui-title').innerText            = t.title;
+      document.getElementById('ui-mode-label').innerText       = t.modeLabel;
+      document.getElementById('ui-mode-auto').innerText        = t.modeAuto;
+      document.getElementById('ui-mode-manual').innerText      = t.modeManual;
+      document.getElementById('ui-field-a-label').innerText    = t.fieldALabel;
+      document.getElementById('ui-field-b-label').innerText    = t.fieldBLabel;
+      document.getElementById('fieldA').placeholder            = t.placeholder;
+      document.getElementById('fieldB').placeholder            = t.placeholder;
+      document.getElementById('ui-btn-scan-a').innerText       = t.btnScanA;
+      document.getElementById('ui-btn-scan-b').innerText       = t.btnScanB;
+      document.getElementById('ui-btn-clear-a').innerText      = t.btnClearA;
+      document.getElementById('ui-btn-clear-b').innerText      = t.btnClearB;
+      document.getElementById('ui-btn-clear-all').innerText    = t.btnClearAll;
+      document.getElementById('ui-btn-compare').innerText      = t.btnCompare;
+      document.getElementById('ui-btn-cancel-scan').innerText  = t.btnCancelScan;
+      document.getElementById('ui-modal-row1').innerText       = t.modalRow1;
+      document.getElementById('ui-modal-row2').innerText       = t.modalRow2;
+      document.getElementById('ui-modal-close').innerText      = t.modalClose;
+      document.getElementById('ui-camera-label').innerText     = t.cameraLabel;
+      document.getElementById('ui-btn-mode-1d').innerText      = t.btnMode1D;
+      document.getElementById('ui-btn-mode-2d').innerText      = t.btnMode2D;
     }
 
-    // ── 條碼字串萃取（可依需求自行修改） ────────────────────────
     function extractSpecificText(rawText) {
       return rawText;
     }
 
-    // ── 以指定鏡頭 ID 啟動掃描 ──────────────────────────────────
     async function startScanWithCamera(cameraId) {
       if (html5QrCode && html5QrCode.isScanning) {
         await html5QrCode.stop();
       }
+      currentCameraId = cameraId;
+
       const config = {
         fps: 15,
         useBarCodeDetectorIfSupported: true,
+        // ★ 不使用 qrbox：避免框外遮罩讓畫面變暗，也避免框太小導致更難掃
         videoConstraints: {
           deviceId: { exact: cameraId },
           width:  { ideal: 1280 },
           height: { ideal: 720  },
-          advanced: [{ focusMode: 'continuous' }, { torch: true }]
+          advanced: [{ focusMode: 'continuous' }]
         }
       };
+
       await html5QrCode.start(
         { deviceId: { exact: cameraId } },
         config,
@@ -353,7 +485,6 @@
       );
     }
 
-    // ── 使用者切換下拉選單時觸發 ─────────────────────────────────
     async function switchCamera(cameraId) {
       if (!cameraId) return;
       const select = document.getElementById('cameraSelect');
@@ -367,7 +498,6 @@
       }
     }
 
-    // ── 掃描入口 ─────────────────────────────────────────────────
     async function startScan(target) {
       currentTarget = target;
       document.getElementById('scanner-container').style.display = 'flex';
@@ -394,7 +524,6 @@
         });
         select.disabled = false;
 
-        // 優先選後置鏡頭
         const backCam    = cameras.find(c => /back|rear|environment|後/i.test(c.label));
         const defaultCam = backCam || cameras[cameras.length - 1];
         select.value = defaultCam.id;
@@ -406,7 +535,6 @@
           stopScan();
         }
       } else {
-        // getCameras() 失敗 → 退回 facingMode fallback
         select.innerHTML = `<option value="">${t.cameraDefault} (預設)</option>`;
         try {
           await html5QrCode.start(
@@ -421,7 +549,6 @@
       }
     }
 
-    // ── 停止掃描 ─────────────────────────────────────────────────
     function stopScan() {
       document.getElementById('scanner-container').style.display = 'none';
       if (html5QrCode && html5QrCode.isScanning) {
@@ -429,7 +556,6 @@
       }
     }
 
-    // ── 掃描成功回呼 ─────────────────────────────────────────────
     function onScanSuccess(decodedText) {
       if (navigator.vibrate) navigator.vibrate(200);
       stopScan();
@@ -442,14 +568,12 @@
       checkAutoCompare();
     }
 
-    // ── 欄位清除 ─────────────────────────────────────────────────
     function clearField(target) {
       if (target === 'A') document.getElementById('fieldA').value = '';
       if (target === 'B') document.getElementById('fieldB').value = '';
     }
     function clearAll() { clearField('A'); clearField('B'); }
 
-    // ── 自動比對 ─────────────────────────────────────────────────
     function checkAutoCompare() {
       const mode = document.querySelector('input[name="compareMode"]:checked').value;
       const valA = document.getElementById('fieldA').value;
@@ -459,7 +583,6 @@
       }
     }
 
-    // ── 手動比對 ─────────────────────────────────────────────────
     function manualCompare() {
       const valA = document.getElementById('fieldA').value;
       const valB = document.getElementById('fieldB').value;
@@ -470,7 +593,6 @@
       showCompareResult(valA, valB);
     }
 
-    // ── 顯示比對結果 ─────────────────────────────────────────────
     function showCompareResult(valA, valB) {
       const isMatch = (valA === valB);
       const t = translations[currentLang];
@@ -486,7 +608,10 @@
       document.getElementById('resultModal').style.display = 'none';
     }
 
-    window.onload = changeLanguage;
+    window.onload = () => {
+      changeLanguage();
+      applyScanModeUI();
+    };
   </script>
 </body>
 </html>
