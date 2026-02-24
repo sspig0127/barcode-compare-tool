@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>條碼比對小工具</title>
+    <title>條碼比對工具</title>
     <!-- 引入 html5-qrcode 掃碼套件 -->
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
@@ -53,6 +53,12 @@
             box-sizing: border-box;
             margin-bottom: 10px;
             background-color: #fafafa;
+            /* 讓輸入框被選取時有明顯的藍框 */
+            outline: none;
+        }
+        input[type="text"]:focus {
+            border-color: #0d6efd;
+            box-shadow: 0 0 5px rgba(13, 110, 253, 0.3);
         }
         .button-group {
             display: flex;
@@ -146,14 +152,15 @@
         <label id="ui-mode-label">比對模式：</label>
         <div class="mode-selector">
             <label><input type="radio" name="compareMode" value="auto" checked> <span id="ui-mode-auto">自動比對</span></label>
-            <label><input type="radio" name="compareMode" value="manual"> <span id="ui-mode-manual">手動比對</span></label>
+            <label><input type="radio" name="compareMode" value="manual"> <span id="ui-mode-manual">手動點選</span></label>
         </div>
     </div>
 
     <!-- 欄位 A -->
     <div class="card">
         <label id="ui-field-a-label">A 欄位</label>
-        <input type="text" id="fieldA" placeholder="點擊掃描或手動輸入" onclick="startScan('A')" readonly>
+        <!-- 【修改重點】移除 onclick 與 readonly，加入 oninput -->
+        <input type="text" id="fieldA" placeholder="請手動輸入或點選掃描" oninput="checkAutoCompare()">
         <div class="button-group">
             <button class="btn-scan" id="ui-btn-scan-a" onclick="startScan('A')">📷 掃描 A</button>
             <button class="btn-clear" id="ui-btn-clear-a" onclick="clearField('A')">清除 A</button>
@@ -163,7 +170,8 @@
     <!-- 欄位 B -->
     <div class="card">
         <label id="ui-field-b-label">B 欄位</label>
-        <input type="text" id="fieldB" placeholder="點擊掃描或手動輸入" onclick="startScan('B')" readonly>
+        <!-- 【修改重點】移除 onclick 與 readonly，加入 oninput -->
+        <input type="text" id="fieldB" placeholder="請手動輸入或點選掃描" oninput="checkAutoCompare()">
         <div class="button-group">
             <button class="btn-scan" id="ui-btn-scan-b" onclick="startScan('B')">📷 掃描 B</button>
             <button class="btn-clear" id="ui-btn-clear-b" onclick="clearField('B')">清除 B</button>
@@ -174,7 +182,7 @@
     <div class="card">
         <div class="button-group">
             <button class="btn-clear-all" id="ui-btn-clear-all" onclick="clearAll()">🗑️ 清除全部</button>
-            <button class="btn-compare" id="ui-btn-compare" onclick="manualCompare()">🔍 手動比對</button>
+            <button class="btn-compare" id="ui-btn-compare" onclick="manualCompare()">🔍 執行比對</button>
         </div>
     </div>
 
@@ -209,7 +217,7 @@
                 modeManual: '手動點選',
                 fieldALabel: 'A 欄位',
                 fieldBLabel: 'B 欄位',
-                placeholder: '點擊掃描或手動輸入',
+                placeholder: '請手動輸入或點擊下方掃描', // 修改了提示文字
                 btnScanA: '📷 掃描 A',
                 btnScanB: '📷 掃描 B',
                 btnClearA: '清除 A',
@@ -232,7 +240,7 @@
                 modeManual: 'Manual',
                 fieldALabel: 'Field A',
                 fieldBLabel: 'Field B',
-                placeholder: 'Tap to scan or type',
+                placeholder: 'Type manually or tap scan below', // 修改了提示文字
                 btnScanA: '📷 Scan A',
                 btnScanB: '📷 Scan B',
                 btnClearA: 'Clear A',
@@ -255,7 +263,7 @@
                 modeManual: 'Thủ công',
                 fieldALabel: 'Trường A',
                 fieldBLabel: 'Trường B',
-                placeholder: 'Nhấn để quét',
+                placeholder: 'Nhập thủ công hoặc nhấn quét', // 修改了提示文字
                 btnScanA: '📷 Quét A',
                 btnScanB: '📷 Quét B',
                 btnClearA: 'Xóa A',
@@ -309,7 +317,7 @@
             return rawText; 
         }
 
-     // 啟動相機掃描 (已修復權限與設定錯誤)
+        // 啟動相機掃描 (已修復權限與設定錯誤)
         function startScan(target) {
             currentTarget = target;
             document.getElementById('scanner-container').style.display = 'flex';
@@ -318,21 +326,19 @@
                 html5QrCode = new Html5Qrcode("reader");
             }
             
-            // 1. 基本相機指定 (解決 1 key 報錯：這裡只能放一個屬性)
+            // 基本相機指定 (解決 1 key 報錯)
             const cameraConfig = { facingMode: "environment" };
 
-            // 2. 掃描器與進階影像設定
+            // 掃描器與進階影像設定
             const scanConfig = { 
                 fps: 15,
-                // 【修正】將高解析度與對焦等進階設定，包在 videoConstraints 裡面
+                // 將高解析度與對焦等進階設定，包在 videoConstraints 裡面
                 videoConstraints: {
                     facingMode: "environment",
                     width: { ideal: 1280 },
                     height: { ideal: 720 },
                     advanced: [{ focusMode: "continuous" }]
                 }
-                // 若想要恢復掃描框，可以取消下方註解：
-                // , qrbox: { width: 300, height: 150 } 
             };
 
             // 啟動相機
@@ -382,6 +388,7 @@
             const valA = document.getElementById('fieldA').value;
             const valB = document.getElementById('fieldB').value;
 
+            // 當模式為自動，且A與B都有內容時，才執行比對
             if (mode === 'auto' && valA !== '' && valB !== '') {
                 showCompareResult(valA, valB);
             }
