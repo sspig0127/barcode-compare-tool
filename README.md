@@ -53,13 +53,14 @@ const translations = {
 ```
 
 
-新增完畢後，記得在 HTML 的 <select id="langSelector"> 中加入對應的 <option value="id">Bahasa Indonesia</option> 即可完成擴充！
+新增完畢後，記得在 HTML 的 `<select id="langSelector">` 中加入對應的 `<option value="id">Bahasa Indonesia</option>` 即可完成擴充！
 
 ---
 
 
 
 ## 📦 使用技術
+
 - HTML5 / CSS3 / Vanilla JavaScript
 
 - [html5-qrcode - 負責 2D / QR Code 高效解析](https://www.google.com/url?sa=E&q=https%3A%2F%2Fgithub.com%2Fmebjas%2Fhtml5-qrcode)
