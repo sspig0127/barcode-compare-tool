@@ -804,31 +804,42 @@
       showCompareResult(valA, valB);
     }
 
-    // ── ★ 判斷比對結果邏輯 ──
+    // ── ★ 判斷比對結果邏輯 (增強版) ──
     function showCompareResult(valA, valB) {
       const rule = document.querySelector('input[name="compareRule"]:checked').value;
+      
+      // 【修正重點】：淨化字串 (Sanitization)
+      // 1. 移除所有空白與換行 (\s+) - 解決複製貼上造成的斷行與前後多餘空白
+      // 2. 移除所有 ASCII 不可見控制字元 ([\x00-\x1F\x7F]) - 解決 2D 條碼常帶有的 \x1D 等群組分隔符號
+      const cleanA = valA.replace(/\s+/g, '').replace(/[\x00-\x1F\x7F]/g, '');
+      const cleanB = valB.replace(/\s+/g, '').replace(/[\x00-\x1F\x7F]/g, '');
+
       let isMatch = false;
 
       if (rule === 'exact') {
         // 規則 1：完全比對
-        isMatch = (valA === valB);
+        isMatch = (cleanA === cleanB);
       } else if (rule === 'partial') {
         // 規則 2：包含比對 (短字串是長字串的一部分)
-        if (valA.length <= valB.length) {
-          isMatch = valB.includes(valA);
+        if (cleanA.length <= cleanB.length) {
+          isMatch = cleanB.includes(cleanA);
         } else {
-          isMatch = valA.includes(valB);
+          isMatch = cleanA.includes(cleanB);
         }
       }
 
       const t = translations[currentLang];
+      
+      // 畫面上依然顯示使用者原始輸入的內容，但比對結果是依照淨化後的結果
       document.getElementById('modalValA').innerText = valA;
       document.getElementById('modalValB').innerText = valB;
+      
       const el = document.getElementById('modalResult');
       el.innerText  = isMatch ? t.matchSuccess : t.matchFail;
       el.className  = 'result-text ' + (isMatch ? 'match' : 'mismatch');
       document.getElementById('resultModal').style.display = 'flex';
     }
+
 
     function closeModal() {
       document.getElementById('resultModal').style.display = 'none';
