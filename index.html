@@ -49,6 +49,26 @@
     .btn-clear-all { background-color: #dc3545; color: white; }
     .btn-compare   { background-color: #198754; color: white; }
 
+    /* 文字連結按鈕（主畫面） */
+    .link-button {
+      background: none; border: none; padding: 0; color: #0d6efd;
+      text-decoration: underline; cursor: pointer; font-size: 14px;
+    }
+
+    /* 隱私權摘要 Modal */
+    #privacyModal.modal {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+      z-index: 3000; justify-content: center; align-items: center; padding: 15px;
+    }
+    #privacyModal .modal-content {
+      background: #fff; border-radius: 12px; width: 100%; max-width: 520px;
+      padding: 20px 20px; text-align: left; line-height: 1.6;
+    }
+    .privacy-title { margin: 0 0 10px 0; font-size: 18px; font-weight: bold; }
+    .privacy-list { margin: 10px 0 0 20px; padding: 0; font-size: 14px; color: #333; }
+    .privacy-list li { margin-bottom: 8px; }
+    .privacy-footnote { margin-top: 15px; font-size: 12.5px; color: #666; }
+
     /* ── 掃描器覆蓋層 ── */
     #scanner-container {
       display: none;
@@ -271,6 +291,13 @@
     </select>
   </div>
 
+  <!-- 隱私權按鈕 -->
+  <div style="margin: 5px 0 15px 0; text-align: left;">
+    <button type="button" class="link-button" id="ui-privacy-link" onclick="openPrivacyModal()">
+      隱私權摘要
+    </button>
+  </div>
+
   <div class="card">
     <label id="ui-mode-label">比對模式：</label>
     <div class="mode-selector">
@@ -364,7 +391,28 @@
     </div>
   </div>
 
+  <!-- 隱私權彈窗 -->
+  <div id="privacyModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="privacyTitle">
+    <div class="modal-content">
+      <h3 class="privacy-title" id="privacyTitle">隱私權摘要 (Privacy Summary)</h3>
+      <div id="privacyContent"></div>
+      <button type="button" class="btn-clear" style="width:100%; margin-top: 15px;" id="ui-privacy-close" onclick="closePrivacyModal()">
+        關閉
+      </button>
+    </div>
+  </div>
+
   <script>
+    // ── 隱私權彈窗控制 ──
+    function openPrivacyModal() { document.getElementById('privacyModal').style.display = 'flex'; }
+    function closePrivacyModal() { document.getElementById('privacyModal').style.display = 'none'; }
+    
+    document.addEventListener('click', (e) => {
+      const modal = document.getElementById('privacyModal');
+      if (modal && modal.style.display === 'flex' && e.target === modal) closePrivacyModal();
+    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePrivacyModal(); });
+
     // ── 系統全域變數 ──
     let html5QrCode       = null;
     let isHtml5QrScanning = false;
@@ -386,6 +434,16 @@
     const translations = {
       'zh-TW': {
         title         : '條碼比對工具',
+        privacyLink   : '隱私權摘要',
+        privacyTitle  : '隱私權聲明與告知事項 (Privacy Summary)',
+        privacyHtml   : `
+          <ul class="privacy-list">
+            <li><strong>處理方式與範圍：</strong>本工具為純前端網頁應用程式，條碼掃描、字串比對皆在您的裝置本機瀏覽器內完成。本程式不會將掃描的條碼、相機影像或欄位內容傳送至任何後端伺服器。</li>
+            <li><strong>權限與控制：</strong>相機權限僅在您啟動掃描時使用，您可於瀏覽器設定中隨時撤銷權限。我們不需註冊帳號、不建立使用者數位足跡或進行建檔 (Profiling)。</li>
+            <li><strong>第三方與連線紀錄：</strong>本頁面透過第三方 CDN 載入開源條碼套件，該 CDN 供應商或網頁代管平台 (如 GitHub Pages) 可能依其系統預設保留一般技術性存取紀錄（如 IP 位址、User-Agent 等）。</li>
+            <li><strong>當事人權利與聯絡方式：</strong>為符合台灣個資法 (PDPA) 及歐盟 GDPR 第13條之精神，若您對個人資料處理有任何疑問或欲行使相關權利，請聯繫：<a href="mailto:sspig0127+github@gmail.com">sspig0127+github@gmail.com</a></li>
+          </ul>
+        `,
         modeLabel     : '比對模式：',
         modeAuto      : '自動比對',
         modeManual    : '手動點選',
@@ -415,6 +473,16 @@
       },
       'en': {
         title         : 'Barcode Matcher',
+        privacyLink   : 'Privacy Summary',
+        privacyTitle  : 'Privacy Summary',
+        privacyHtml   : `
+          <ul class="privacy-list">
+            <li><strong>Processing & Scope:</strong> This is a client-side web application. All scanning and comparisons run locally in your browser. No barcodes, camera frames, or field data are uploaded to any server by this app.</li>
+            <li><strong>Permissions & Control:</strong> Camera permission is requested only when initiating a scan and can be revoked anytime in your browser settings. No account is required, and we do not profile or track users.</li>
+            <li><strong>Third-party & Logs:</strong> This page loads open-source libraries via a third-party CDN. The CDN or hosting provider (e.g., GitHub Pages) may temporarily log standard technical access data (e.g., IP address, User-Agent).</li>
+            <li><strong>Data Subject Rights & Contact:</strong> In compliance with Taiwan PDPA and GDPR Article 13, for any privacy inquiries or to exercise your rights, please contact: <a href="mailto:sspig0127+github@gmail.com">sspig0127+github@gmail.com</a></li>
+          </ul>
+        `,
         modeLabel     : 'Mode:',
         modeAuto      : 'Auto Match',
         modeManual    : 'Manual',
@@ -444,6 +512,16 @@
       },
       'vi': {
         title         : 'Công cụ so sánh mã vạch',
+        privacyLink   : 'Tóm tắt Quyền Riêng Tư',
+        privacyTitle  : 'Tóm tắt Quyền Riêng Tư',
+        privacyHtml   : `
+          <ul class="privacy-list">
+            <li><strong>Xử lý & Phạm vi:</strong> Ứng dụng web này chạy hoàn toàn trên trình duyệt của bạn. Việc quét và so sánh mã vạch diễn ra cục bộ. Dữ liệu không bao giờ được tải lên máy chủ.</li>
+            <li><strong>Quyền & Kiểm soát:</strong> Quyền truy cập camera chỉ được sử dụng khi quét và bạn có thể thu hồi bất cứ lúc nào trong cài đặt trình duyệt. Ứng dụng không yêu cầu tài khoản và không theo dõi hồ sơ người dùng.</li>
+            <li><strong>Bên thứ ba & Nhật ký (Logs):</strong> Trang này tải thư viện nguồn mở từ CDN. CDN hoặc nền tảng lưu trữ có thể lưu nhật ký truy cập tiêu chuẩn (VD: IP, User-Agent).</li>
+            <li><strong>Liên hệ:</strong> Theo PDPA và GDPR Điều 13, nếu có thắc mắc về quyền riêng tư, vui lòng liên hệ: <a href="mailto:sspig0127+github@gmail.com">sspig0127+github@gmail.com</a></li>
+          </ul>
+        `,
         modeLabel     : 'Chế độ:',
         modeAuto      : 'Tự động',
         modeManual    : 'Thủ công',
@@ -506,6 +584,12 @@
       document.getElementById('ui-camera-label').innerText     = t.cameraLabel;
       document.getElementById('ui-btn-mode-1d').innerText      = t.btnMode1D;
       document.getElementById('ui-btn-mode-2d').innerText      = t.btnMode2D;
+      
+      // Privacy UI Update
+      document.getElementById('ui-privacy-link').innerText = t.privacyLink;
+      document.getElementById('privacyTitle').innerText = t.privacyTitle;
+      document.getElementById('privacyContent').innerHTML = t.privacyHtml;
+      document.getElementById('ui-privacy-close').innerText = t.modalClose || '關閉';
     }
 
     // ── ★ 手電筒 (Torch) 嚴謹控制與錯誤捕捉 ──
