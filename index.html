@@ -60,12 +60,31 @@
       display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55);
       z-index: 3000; justify-content: center; align-items: center; padding: 15px;
     }
+    
+    /* 更新：改為 Flex 排版並限制最大高度 */
     #privacyModal .modal-content {
       background: #fff; border-radius: 12px; width: 100%; max-width: 520px;
-      padding: 20px 20px; text-align: left; line-height: 1.6;
+      max-height: 85vh; /* 限制最大高度為螢幕的 85% */
+      display: flex; flex-direction: column; /* 允許內部區塊彈性伸縮 */
+      padding: 20px; text-align: left; line-height: 1.6;
+      box-sizing: border-box;
     }
-    .privacy-title { margin: 0 0 10px 0; font-size: 18px; font-weight: bold; }
-    .privacy-list { margin: 10px 0 0 20px; padding: 0; font-size: 14px; color: #333; }
+
+    .privacy-title { margin: 0 0 10px 0; font-size: 18px; font-weight: bold; flex-shrink: 0; }
+    
+    /* 新增：讓內容區塊產生捲軸 */
+    #privacyContent {
+      overflow-y: auto; /* 內容過長時出現上下捲軸 */
+      flex: 1;          /* 佔滿剩餘空間 */
+      padding-right: 5px; /* 避免文字貼齊捲軸 */
+      margin-bottom: 10px; /* 與下方按鈕保持距離 */
+    }
+
+    /* 美化捲軸 (適用於 Webkit 瀏覽器如 Chrome/Safari/Edge) */
+    #privacyContent::-webkit-scrollbar { width: 6px; }
+    #privacyContent::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+
+    .privacy-list { margin: 0 0 0 20px; padding: 0; font-size: 14px; color: #333; }
     .privacy-list li { margin-bottom: 8px; }
     .privacy-footnote { margin-top: 15px; font-size: 12.5px; color: #666; }
 
