@@ -86,24 +86,11 @@
 
     /* 頂部操作列 (鏡頭選單 + 手電筒) */
     .top-controls-wrap {
-      flex-shrink: 0;
-      width: 100%;
-      max-width: 520px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 8px;
+      flex-shrink: 0; width: 100%; max-width: 520px;
+      display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
     }
-    .camera-selector-wrap {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .camera-selector-wrap label {
-      color: #fff; font-size: 14px;
-      white-space: nowrap; margin: 0; font-weight: normal;
-    }
+    .camera-selector-wrap { flex: 1; display: flex; align-items: center; gap: 8px; }
+    .camera-selector-wrap label { color: #fff; font-size: 14px; white-space: nowrap; margin: 0; font-weight: normal; }
     #cameraSelect {
       flex: 1; padding: 8px 10px; font-size: 14px;
       border-radius: 6px; border: 1px solid rgba(255,255,255,0.35);
@@ -114,121 +101,53 @@
 
     /* ★ 手電筒按鈕與錯誤動畫 */
     #btn-torch {
-      display: none; 
-      flex-shrink: 0;
-      padding: 8px 14px;
-      font-size: 18px;
-      border-radius: 6px;
-      background: rgba(255,255,255,0.15);
-      border: 1px solid rgba(255,255,255,0.4);
-      color: #fff;
-      cursor: pointer;
-      transition: background 0.2s;
+      display: none; flex-shrink: 0; padding: 8px 14px; font-size: 18px;
+      border-radius: 6px; background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.4); color: #fff; cursor: pointer; transition: background 0.2s;
     }
-    #btn-torch.active {
-      background: #ffc107;
-      color: #000;
-      border-color: #ffc107;
-    }
+    #btn-torch.active { background: #ffc107; color: #000; border-color: #ffc107; }
     @keyframes shake {
-      0%   { transform: translateX(0); }
-      25%  { transform: translateX(-4px); }
-      50%  { transform: translateX(4px); }
-      75%  { transform: translateX(-4px); }
-      100% { transform: translateX(0); }
+      0% { transform: translateX(0); } 25% { transform: translateX(-4px); }
+      50% { transform: translateX(4px); } 75% { transform: translateX(-4px); } 100% { transform: translateX(0); }
     }
-    .error-shake {
-      animation: shake 0.3s;
-      background: #dc3545 !important; 
-      border-color: #dc3545 !important;
-    }
+    .error-shake { animation: shake 0.3s; background: #dc3545 !important; border-color: #dc3545 !important; }
 
     /* 1D / 2D 切換按鈕 */
     .scan-mode-wrap {
-      flex-shrink: 0;
-      width: 100%;
-      max-width: 520px;
-      display: flex;
-      gap: 6px;
-      padding: 4px;
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,0.25);
-      background: rgba(255,255,255,0.08);
-      margin-bottom: 10px;
-      box-sizing: border-box;
+      flex-shrink: 0; width: 100%; max-width: 520px; display: flex; gap: 6px; padding: 4px;
+      border-radius: 12px; border: 1px solid rgba(255,255,255,0.25);
+      background: rgba(255,255,255,0.08); margin-bottom: 10px; box-sizing: border-box;
     }
     .btn-mode {
-      flex: 1 1 0;
-      padding: 8px 10px;
-      font-size: 13px;
-      font-weight: bold;
-      border-radius: 10px;
-      border: 1px solid transparent;
-      background: transparent;
-      color: rgba(255,255,255,0.75);
-      cursor: pointer;
-      line-height: 1.1;
-      transition: background 0.2s, color 0.2s;
+      flex: 1 1 0; padding: 8px 10px; font-size: 13px; font-weight: bold;
+      border-radius: 10px; border: 1px solid transparent; background: transparent;
+      color: rgba(255,255,255,0.75); cursor: pointer; line-height: 1.1; transition: background 0.2s, color 0.2s;
     }
-    .btn-mode.active {
-      background: #ffffff;
-      color: #1a1a1a;
-      border-color: #ffffff;
-    }
+    .btn-mode.active { background: #ffffff; color: #1a1a1a; border-color: #ffffff; }
 
     /* 雙引擎容器 */
     #reader-wrap {
-      width: 100%;
-      max-width: 520px;
-      flex: 1;
-      min-height: 0;
-      position: relative;
-      overflow: hidden;
-      border-radius: 10px;
-      background: #000;
+      width: 100%; max-width: 520px; flex: 1; min-height: 0; position: relative;
+      overflow: hidden; border-radius: 10px; background: #000;
     }
-    #html5qr-reader, #quagga-reader {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-    }
+    #html5qr-reader, #quagga-reader { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
     #quagga-reader video, #quagga-reader canvas {
-      width: 100%; height: 100%;
-      object-fit: cover;
-      position: absolute;
-      top: 0; left: 0;
+      width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0;
     }
 
     /* 自製輔助 UI 框 */
     #scanGuide {
-      position: absolute;
-      left: 50%; top: 50%;
-      transform: translate(-50%, -50%);
-      pointer-events: none;
-      box-sizing: border-box;
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 12px;
-      filter: drop-shadow(0 0 6px rgba(0,0,0,0.35));
-      z-index: 10;
+      position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); pointer-events: none;
+      box-sizing: border-box; border: 1px solid rgba(255,255,255,0.12); border-radius: 12px;
+      filter: drop-shadow(0 0 6px rgba(0,0,0,0.35)); z-index: 10;
     }
-    #scanGuide.mode-2d {
-      width: min(72%, 340px);
-      aspect-ratio: 1 / 1;
-      height: auto;
-    }
-    #scanGuide.mode-1d {
-      width: min(90%, 460px);
-      height: clamp(110px, 20vh, 160px);
-      border-radius: 10px;
-    }
+    #scanGuide.mode-2d { width: min(72%, 340px); aspect-ratio: 1 / 1; height: auto; }
+    #scanGuide.mode-1d { width: min(90%, 460px); height: clamp(110px, 20vh, 160px); border-radius: 10px; }
 
     /* 四角點綴 */
     .corner {
-      position: absolute;
-      width: 26px; height: 26px;
-      box-sizing: border-box;
-      border: 4px solid rgba(0, 229, 255, 0.9);
-      filter: drop-shadow(0 0 6px rgba(0,229,255,0.18));
+      position: absolute; width: 26px; height: 26px; box-sizing: border-box;
+      border: 4px solid rgba(0, 229, 255, 0.9); filter: drop-shadow(0 0 6px rgba(0,229,255,0.18));
     }
     .corner.tl { left: -2px; top: -2px; border-right: 0; border-bottom: 0; border-top-left-radius: 10px; }
     .corner.tr { right: -2px; top: -2px; border-left: 0; border-bottom: 0; border-top-right-radius: 10px; }
@@ -237,34 +156,25 @@
 
     /* 1D 掃描線 */
     .scan-line {
-      position: absolute;
-      left: 10px; right: 10px;
-      top: 50%; height: 2px;
-      background: rgba(255, 70, 70, 0.85);
-      box-shadow: 0 0 10px rgba(255, 70, 70, 0.35);
-      transform: translateY(-50%);
-      display: none;
+      position: absolute; left: 10px; right: 10px; top: 50%; height: 2px;
+      background: rgba(255, 70, 70, 0.85); box-shadow: 0 0 10px rgba(255, 70, 70, 0.35);
+      transform: translateY(-50%); display: none;
     }
     #scanGuide.mode-1d .scan-line { display: block; }
 
     /* 取消按鈕 */
     .btn-cancel-scan {
-      flex-shrink: 0;
-      margin-top: 10px; margin-bottom: 4px;
-      background-color: #dc3545; color: white;
-      width: auto; padding: 8px 22px; font-size: 14px;
+      flex-shrink: 0; margin-top: 10px; margin-bottom: 4px;
+      background-color: #dc3545; color: white; width: auto; padding: 8px 22px; font-size: 14px;
     }
 
     /* ── 結果 Modal ── */
     .modal {
-      display: none; position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.5); z-index: 2000;
-      justify-content: center; align-items: center;
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center;
     }
     .modal-content {
-      background: white; padding: 20px; border-radius: 10px;
-      width: 85%; max-width: 400px;
+      background: white; padding: 20px; border-radius: 10px; width: 85%; max-width: 400px;
       text-align: center; font-size: 18px; line-height: 1.6;
     }
     .modal-content p { margin: 10px 0; word-break: break-all; }
@@ -273,11 +183,10 @@
     .mismatch { color: #dc3545; }
 
     .mode-selector {
-      display: flex; justify-content: space-around;
-      margin-bottom: 15px; padding: 10px;
+      display: flex; justify-content: space-around; padding: 10px;
       background: #e9ecef; border-radius: 8px;
     }
-    .mode-selector label { font-weight: normal; margin: 0; font-size: 15px; }
+    .mode-selector label { font-weight: normal; margin: 0; font-size: 14px; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -299,15 +208,29 @@
   </div>
 
   <div class="card">
-    <label id="ui-mode-label">比對模式：</label>
-    <div class="mode-selector">
+    <!-- 觸發方式 -->
+    <label id="ui-trigger-label">觸發方式：</label>
+    <div class="mode-selector" style="margin-bottom: 15px;">
       <label>
-        <input type="radio" name="compareMode" value="auto" checked>
-        <span id="ui-mode-auto">自動比對</span>
+        <input type="radio" name="compareTrigger" value="auto" onchange="checkAutoCompare()" checked>
+        <span id="ui-trigger-auto">自動比對</span>
       </label>
       <label>
-        <input type="radio" name="compareMode" value="manual">
-        <span id="ui-mode-manual">手動點選</span>
+        <input type="radio" name="compareTrigger" value="manual" onchange="checkAutoCompare()">
+        <span id="ui-trigger-manual">手動點選</span>
+      </label>
+    </div>
+
+    <!-- 比對規則 -->
+    <label id="ui-rule-label">比對規則：</label>
+    <div class="mode-selector" style="margin-bottom: 0;">
+      <label>
+        <input type="radio" name="compareRule" value="exact" onchange="checkAutoCompare()" checked>
+        <span id="ui-rule-exact">完全比對 (A = B)</span>
+      </label>
+      <label>
+        <input type="radio" name="compareRule" value="partial" onchange="checkAutoCompare()">
+        <span id="ui-rule-partial">包含比對 (短在長內)</span>
       </label>
     </div>
   </div>
@@ -338,8 +261,6 @@
   </div>
 
   <div id="scanner-container">
-    
-    <!-- 頂部操作列 -->
     <div class="top-controls-wrap">
       <div class="camera-selector-wrap">
         <label id="ui-camera-label">切換鏡頭：</label>
@@ -347,11 +268,9 @@
           <option id="ui-camera-loading-opt">載入鏡頭清單...</option>
         </select>
       </div>
-      <!-- ★ 手電筒按鈕 -->
       <button id="btn-torch" onclick="toggleTorch()" title="開關手電筒">🔦</button>
     </div>
 
-    <!-- 1D / 2D 雙引擎切換 -->
     <div class="scan-mode-wrap" role="group" aria-label="Scan mode">
       <button class="btn-mode active" id="btn-mode-1d" onclick="setScanMode('1D')" type="button">
         <span id="ui-btn-mode-1d">1D 條碼</span>
@@ -362,17 +281,12 @@
     </div>
 
     <div id="reader-wrap">
-      <!-- Html5-qrcode 容器 (2D) -->
       <div id="html5qr-reader" style="display:none;"></div>
-      <!-- Quagga2 容器 (1D) -->
       <div id="quagga-reader" style="display:none;"></div>
 
-      <!-- 輔助框 UI -->
       <div id="scanGuide" class="mode-1d" aria-hidden="true">
-        <span class="corner tl"></span>
-        <span class="corner tr"></span>
-        <span class="corner bl"></span>
-        <span class="corner br"></span>
+        <span class="corner tl"></span><span class="corner tr"></span>
+        <span class="corner bl"></span><span class="corner br"></span>
         <div class="scan-line"></div>
       </div>
     </div>
@@ -380,6 +294,7 @@
     <button class="btn-cancel-scan" id="ui-btn-cancel-scan" onclick="stopScan()">取消掃描</button>
   </div>
 
+  <!-- 比對結果 Modal -->
   <div id="resultModal" class="modal">
     <div class="modal-content">
       <p><strong id="ui-modal-row1">第一列 (A欄位)</strong><br><span id="modalValA"></span></p>
@@ -406,7 +321,6 @@
     // ── 隱私權彈窗控制 ──
     function openPrivacyModal() { document.getElementById('privacyModal').style.display = 'flex'; }
     function closePrivacyModal() { document.getElementById('privacyModal').style.display = 'none'; }
-    
     document.addEventListener('click', (e) => {
       const modal = document.getElementById('privacyModal');
       if (modal && modal.style.display === 'flex' && e.target === modal) closePrivacyModal();
@@ -418,7 +332,6 @@
     let isHtml5QrScanning = false;
     let isQuaggaScanning  = false;
     
-    // 防抖機制變數 (Quagga 專用)
     let quaggaLastCode    = "";
     let quaggaCodeCount   = 0;
     const REQUIRED_MATCHES = 2; 
@@ -444,9 +357,12 @@
             <li><strong>當事人權利與聯絡方式：</strong>為符合台灣個資法 (PDPA) 及歐盟 GDPR 第13條之精神，若您對個人資料處理有任何疑問或欲行使相關權利，請聯繫：<a href="mailto:sspig0127+github@gmail.com">sspig0127+github@gmail.com</a></li>
           </ul>
         `,
-        modeLabel     : '比對模式：',
-        modeAuto      : '自動比對',
-        modeManual    : '手動點選',
+        triggerLabel  : '觸發方式：',
+        triggerAuto   : '自動比對',
+        triggerManual : '手動點選',
+        ruleLabel     : '比對規則：',
+        ruleExact     : '完全比對 (A = B)',
+        rulePartial   : '包含比對 (短在長內)',
         fieldALabel   : 'A 欄位',
         fieldBLabel   : 'B 欄位',
         placeholder   : '手動輸入或點下方掃描',
@@ -483,9 +399,12 @@
             <li><strong>Data Subject Rights & Contact:</strong> In compliance with Taiwan PDPA and GDPR Article 13, for any privacy inquiries or to exercise your rights, please contact: <a href="mailto:sspig0127+github@gmail.com">sspig0127+github@gmail.com</a></li>
           </ul>
         `,
-        modeLabel     : 'Mode:',
-        modeAuto      : 'Auto Match',
-        modeManual    : 'Manual',
+        triggerLabel  : 'Trigger:',
+        triggerAuto   : 'Auto Match',
+        triggerManual : 'Manual',
+        ruleLabel     : 'Match Rule:',
+        ruleExact     : 'Exact Match (A = B)',
+        rulePartial   : 'Partial Match (Substring)',
         fieldALabel   : 'Field A',
         fieldBLabel   : 'Field B',
         placeholder   : 'Type manually or tap scan below',
@@ -522,9 +441,12 @@
             <li><strong>Liên hệ:</strong> Theo PDPA và GDPR Điều 13, nếu có thắc mắc về quyền riêng tư, vui lòng liên hệ: <a href="mailto:sspig0127+github@gmail.com">sspig0127+github@gmail.com</a></li>
           </ul>
         `,
-        modeLabel     : 'Chế độ:',
-        modeAuto      : 'Tự động',
-        modeManual    : 'Thủ công',
+        triggerLabel  : 'Kích hoạt:',
+        triggerAuto   : 'Tự động',
+        triggerManual : 'Thủ công',
+        ruleLabel     : 'Quy tắc:',
+        ruleExact     : 'Khớp chính xác (A = B)',
+        rulePartial   : 'Khớp một phần (Chuỗi con)',
         fieldALabel   : 'Trường A',
         fieldBLabel   : 'Trường B',
         placeholder   : 'Nhập thủ công hoặc nhấn quét',
@@ -564,9 +486,15 @@
       currentLang = document.getElementById('langSelector').value;
       const t = translations[currentLang];
       document.getElementById('ui-title').innerText            = t.title;
-      document.getElementById('ui-mode-label').innerText       = t.modeLabel;
-      document.getElementById('ui-mode-auto').innerText        = t.modeAuto;
-      document.getElementById('ui-mode-manual').innerText      = t.modeManual;
+      
+      // Update new feature UI bindings
+      document.getElementById('ui-trigger-label').innerText    = t.triggerLabel;
+      document.getElementById('ui-trigger-auto').innerText     = t.triggerAuto;
+      document.getElementById('ui-trigger-manual').innerText   = t.triggerManual;
+      document.getElementById('ui-rule-label').innerText       = t.ruleLabel;
+      document.getElementById('ui-rule-exact').innerText       = t.ruleExact;
+      document.getElementById('ui-rule-partial').innerText     = t.rulePartial;
+
       document.getElementById('ui-field-a-label').innerText    = t.fieldALabel;
       document.getElementById('ui-field-b-label').innerText    = t.fieldBLabel;
       document.getElementById('fieldA').placeholder            = t.placeholder;
@@ -592,38 +520,27 @@
       document.getElementById('ui-privacy-close').innerText = t.modalClose || '關閉';
     }
 
-    // ── ★ 手電筒 (Torch) 嚴謹控制與錯誤捕捉 ──
     async function checkTorchCapability(track) {
       const btnTorch = document.getElementById('btn-torch');
-      
       if (track && typeof track.getCapabilities === 'function') {
         const capabilities = track.getCapabilities();
-
-        // 判斷 torch 是否支援 (部分 Android 需要檢查 fillLightMode)
         const isTorchSupported = !!capabilities.torch || 
                                  ('fillLightMode' in capabilities && capabilities.fillLightMode.includes('flash'));
-
         if (isTorchSupported) {
           btnTorch.style.display = 'block';
-          
           if (isTorchOn) {
             try {
               await track.applyConstraints({ advanced: [{ torch: true }] });
               btnTorch.classList.add('active');
             } catch(e) { 
-              console.warn('Torch restore failed:', e);
-              isTorchOn = false;
-              btnTorch.classList.remove('active');
+              isTorchOn = false; btnTorch.classList.remove('active');
             }
           }
           return;
         }
       }
-      
-      // 不支援時隱藏
       btnTorch.style.display = 'none';
-      isTorchOn = false;
-      btnTorch.classList.remove('active');
+      isTorchOn = false; btnTorch.classList.remove('active');
     }
 
     async function toggleTorch() {
@@ -639,36 +556,26 @@
              document.getElementById('btn-torch').classList.toggle('active', isTorchOn);
              return; 
           } else {
-             // Fallback: 官方 API 無法使用時，直接尋找 video stream
              const video = document.querySelector('#html5qr-reader video');
-             if (video && video.srcObject) {
-               track = video.srcObject.getVideoTracks()[0];
-             }
+             if (video && video.srcObject) track = video.srcObject.getVideoTracks()[0];
           }
         } else if (scanMode === '1D' && isQuaggaScanning) {
           track = Quagga.CameraAccess.getActiveTrack();
         }
 
-        // 若上述取得 track 成功，直接觸發 applyConstraints
         if (track && typeof track.applyConstraints === 'function') {
            await track.applyConstraints({ advanced: [{ torch: targetState }] });
            isTorchOn = targetState;
            document.getElementById('btn-torch').classList.toggle('active', isTorchOn);
         }
-
       } catch (err) {
-        console.warn('Torch toggle error:', err);
-        // 觸發錯誤動畫提示
         const btn = document.getElementById('btn-torch');
         btn.classList.add('error-shake');
         setTimeout(() => btn.classList.remove('error-shake'), 300);
-
-        // 狀態回滾 (確保 UI 與實際硬體一致)
         document.getElementById('btn-torch').classList.toggle('active', isTorchOn);
       }
     }
 
-    // ── 切換 1D / 2D 引擎觸發器 ──
     async function setScanMode(mode) {
       if (scanMode === mode) return;
       scanMode = mode;
@@ -677,13 +584,10 @@
       if (document.getElementById('scanner-container').style.display === 'flex') {
         const select = document.getElementById('cameraSelect');
         select.disabled = true;
-        document.getElementById('btn-torch').style.display = 'none'; // 切換引擎中先隱藏
+        document.getElementById('btn-torch').style.display = 'none';
         try {
-          if (currentCameraId) {
-            await startEngine(currentCameraId);
-          } else {
-            await startEngineFallback();
-          }
+          if (currentCameraId) await startEngine(currentCameraId);
+          else await startEngineFallback();
         } catch (err) {
           alert(translations[currentLang].alertCamFail + '\n' + err);
           await stopScan();
@@ -693,20 +597,18 @@
       }
     }
 
-    // ── 全域停止所有相機引擎 ──
     async function stopActiveEngines() {
       if (isHtml5QrScanning && html5QrCode) {
-        try { await html5QrCode.stop(); } catch (e) { console.warn(e); }
+        try { await html5QrCode.stop(); } catch (e) {}
         isHtml5QrScanning = false;
       }
       if (isQuaggaScanning) {
-        try { Quagga.stop(); } catch (e) { console.warn(e); }
+        try { Quagga.stop(); } catch (e) {}
         isQuaggaScanning = false;
       }
       document.getElementById('btn-torch').style.display = 'none';
     }
 
-    // ── 啟動核心引擎 ──
     async function startEngine(cameraId) {
       await stopActiveEngines();
       currentCameraId = cameraId;
@@ -717,48 +619,32 @@
       if (scanMode === '2D') {
         if (!html5QrCode) html5QrCode = new Html5Qrcode('html5qr-reader');
         const config = {
-          fps: 15,
-          useBarCodeDetectorIfSupported: true,
+          fps: 15, useBarCodeDetectorIfSupported: true,
           videoConstraints: {
-            deviceId: { exact: cameraId },
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
+            deviceId: { exact: cameraId }, width: { ideal: 1280 }, height: { ideal: 720 },
             advanced: [{ focusMode: 'continuous' }]
           }
         };
         await html5QrCode.start({ deviceId: { exact: cameraId } }, config, onScanSuccess);
         isHtml5QrScanning = true;
-        
         setTimeout(() => {
            const videoTrack = document.querySelector('#html5qr-reader video')?.srcObject?.getVideoTracks()[0];
            if (videoTrack) checkTorchCapability(videoTrack);
         }, 800);
-
       } else {
-        quaggaLastCode = "";
-        quaggaCodeCount = 0;
+        quaggaLastCode = ""; quaggaCodeCount = 0;
         document.getElementById('quagga-reader').innerHTML = ''; 
-
         return new Promise((resolve, reject) => {
           Quagga.init({
             inputStream: {
-              name: "Live",
-              type: "LiveStream",
-              target: document.querySelector('#quagga-reader'),
-              constraints: {
-                deviceId: { exact: cameraId },
-                width: { ideal: 1280 },
-                height: { ideal: 720 }
-              }
+              name: "Live", type: "LiveStream", target: document.querySelector('#quagga-reader'),
+              constraints: { deviceId: { exact: cameraId }, width: { ideal: 1280 }, height: { ideal: 720 } }
             },
-            decoder: {
-              readers: ["code_128_reader", "ean_reader", "ean_8_reader", "code_39_reader", "code_39_vin_reader", "codabar_reader", "upc_reader", "upc_e_reader", "i2of5_reader"]
-            },
+            decoder: { readers: ["code_128_reader", "ean_reader", "ean_8_reader", "code_39_reader", "code_39_vin_reader", "codabar_reader", "upc_reader", "upc_e_reader", "i2of5_reader"] },
             locate: true
           }, function(err) {
             if (err) { reject(err); return; }
-            Quagga.start();
-            isQuaggaScanning = true;
+            Quagga.start(); isQuaggaScanning = true;
             setTimeout(() => checkTorchCapability(Quagga.CameraAccess.getActiveTrack()), 800);
             resolve();
           });
@@ -766,7 +652,6 @@
       }
     }
 
-    // ── Fallback 啟動 ──
     async function startEngineFallback() {
       await stopActiveEngines();
       currentCameraId = null;
@@ -777,9 +662,7 @@
       if (scanMode === '2D') {
         if (!html5QrCode) html5QrCode = new Html5Qrcode('html5qr-reader');
         await html5QrCode.start(
-          { facingMode: 'environment' },
-          { fps: 15, useBarCodeDetectorIfSupported: true },
-          onScanSuccess
+          { facingMode: 'environment' }, { fps: 15, useBarCodeDetectorIfSupported: true }, onScanSuccess
         );
         isHtml5QrScanning = true;
         setTimeout(() => {
@@ -792,16 +675,14 @@
         return new Promise((resolve, reject) => {
           Quagga.init({
             inputStream: {
-              name: "Live", type: "LiveStream",
-              target: document.querySelector('#quagga-reader'),
+              name: "Live", type: "LiveStream", target: document.querySelector('#quagga-reader'),
               constraints: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }
             },
             decoder: { readers: ["code_128_reader", "ean_reader", "ean_8_reader", "code_39_reader", "code_39_vin_reader", "codabar_reader", "upc_reader", "upc_e_reader", "i2of5_reader"] },
             locate: true
           }, function(err) {
             if (err) { reject(err); return; }
-            Quagga.start();
-            isQuaggaScanning = true;
+            Quagga.start(); isQuaggaScanning = true;
             setTimeout(() => checkTorchCapability(Quagga.CameraAccess.getActiveTrack()), 800);
             resolve();
           });
@@ -814,19 +695,15 @@
       const code = result.codeResult.code;
       if (code === quaggaLastCode) {
         quaggaCodeCount++;
-        if (quaggaCodeCount >= REQUIRED_MATCHES) {
-          onScanSuccess(code);
-        }
+        if (quaggaCodeCount >= REQUIRED_MATCHES) onScanSuccess(code);
       } else {
-        quaggaLastCode = code;
-        quaggaCodeCount = 1;
+        quaggaLastCode = code; quaggaCodeCount = 1;
       }
     });
 
     Quagga.onProcessed(function(result) {
       if (!isQuaggaScanning) return;
-      var drawingCtx = Quagga.canvas.ctx.overlay,
-          drawingCanvas = Quagga.canvas.dom.overlay;
+      var drawingCtx = Quagga.canvas.ctx.overlay, drawingCanvas = Quagga.canvas.dom.overlay;
       if (result) {
         if (result.boxes) {
           drawingCtx.clearRect(0, 0, parseInt(drawingCanvas.getAttribute("width")), parseInt(drawingCanvas.getAttribute("height")));
@@ -834,12 +711,8 @@
               Quagga.ImageDebug.drawPath(box, {x: 0, y: 1}, drawingCtx, {color: "green", lineWidth: 2});
           });
         }
-        if (result.box) {
-          Quagga.ImageDebug.drawPath(result.box, {x: 0, y: 1}, drawingCtx, {color: "#00F", lineWidth: 2});
-        }
-        if (result.codeResult && result.codeResult.code) {
-          Quagga.ImageDebug.drawPath(result.line, {x: 'x', y: 'y'}, drawingCtx, {color: 'red', lineWidth: 3});
-        }
+        if (result.box) Quagga.ImageDebug.drawPath(result.box, {x: 0, y: 1}, drawingCtx, {color: "#00F", lineWidth: 2});
+        if (result.codeResult && result.codeResult.code) Quagga.ImageDebug.drawPath(result.line, {x: 'x', y: 'y'}, drawingCtx, {color: 'red', lineWidth: 3});
       }
     });
 
@@ -848,13 +721,9 @@
       const select = document.getElementById('cameraSelect');
       select.disabled = true;
       document.getElementById('btn-torch').style.display = 'none';
-      try {
-        await startEngine(cameraId);
-      } catch (err) {
-        alert(translations[currentLang].alertCamSwitch + '\n' + err);
-      } finally {
-        select.disabled = false;
-      }
+      try { await startEngine(cameraId); } 
+      catch (err) { alert(translations[currentLang].alertCamSwitch + '\n' + err); } 
+      finally { select.disabled = false; }
     }
 
     async function startScan(target) {
@@ -866,18 +735,13 @@
       select.innerHTML = `<option>${t.cameraLoading}</option>`;
       select.disabled  = true;
 
-      try {
-        cameras = await Html5Qrcode.getCameras();
-      } catch (err) {
-        cameras = [];
-      }
+      try { cameras = await Html5Qrcode.getCameras(); } catch (err) { cameras = []; }
 
       if (cameras.length > 0) {
         select.innerHTML = '';
         cameras.forEach((cam, idx) => {
           const opt = document.createElement('option');
-          opt.value = cam.id;
-          opt.text  = cam.label || `${t.cameraDefault} ${idx + 1}`;
+          opt.value = cam.id; opt.text  = cam.label || `${t.cameraDefault} ${idx + 1}`;
           select.appendChild(opt);
         });
         select.disabled = false;
@@ -886,27 +750,18 @@
         const defaultCam = backCam || cameras[cameras.length - 1];
         select.value = defaultCam.id;
 
-        try {
-          await startEngine(defaultCam.id);
-        } catch (err) {
-          alert(t.alertCamFail + '\n' + err);
-          await stopScan();
-        }
+        try { await startEngine(defaultCam.id); } 
+        catch (err) { alert(t.alertCamFail + '\n' + err); await stopScan(); }
       } else {
         select.innerHTML = `<option value="">${t.cameraDefault} (預設)</option>`;
-        try {
-          await startEngineFallback();
-        } catch (err) {
-          alert(t.alertCamFail + '\n' + err);
-          await stopScan();
-        }
+        try { await startEngineFallback(); } 
+        catch (err) { alert(t.alertCamFail + '\n' + err); await stopScan(); }
       }
     }
 
     async function stopScan() {
       document.getElementById('scanner-container').style.display = 'none';
-      isTorchOn = false; 
-      document.getElementById('btn-torch').classList.remove('active');
+      isTorchOn = false; document.getElementById('btn-torch').classList.remove('active');
       await stopActiveEngines();
     }
 
@@ -914,26 +769,27 @@
       if (navigator.vibrate) navigator.vibrate(200);
       stopScan(); 
       
-      const extracted = decodedText; 
-      if (currentTarget === 'A') {
-        document.getElementById('fieldA').value = extracted;
-      } else if (currentTarget === 'B') {
-        document.getElementById('fieldB').value = extracted;
-      }
+      if (currentTarget === 'A') document.getElementById('fieldA').value = decodedText;
+      else if (currentTarget === 'B') document.getElementById('fieldB').value = decodedText;
+      
       checkAutoCompare();
     }
 
     function clearField(target) {
       if (target === 'A') document.getElementById('fieldA').value = '';
       if (target === 'B') document.getElementById('fieldB').value = '';
+      checkAutoCompare(); // 清除欄位時若設為自動，亦可連動檢查 (或留白不觸發 modal)
     }
     function clearAll() { clearField('A'); clearField('B'); }
 
+    // ── ★ 觸發比對機制 ──
     function checkAutoCompare() {
-      const mode = document.querySelector('input[name="compareMode"]:checked').value;
+      const trigger = document.querySelector('input[name="compareTrigger"]:checked').value;
       const valA = document.getElementById('fieldA').value;
       const valB = document.getElementById('fieldB').value;
-      if (mode === 'auto' && valA !== '' && valB !== '') {
+      
+      // 若為「自動比對」模式，且兩個欄位都不為空時才觸發彈出視窗
+      if (trigger === 'auto' && valA !== '' && valB !== '') {
         showCompareResult(valA, valB);
       }
     }
@@ -948,16 +804,42 @@
       showCompareResult(valA, valB);
     }
 
+    // ── ★ 判斷比對結果邏輯 (增強版) ──
     function showCompareResult(valA, valB) {
-      const isMatch = (valA === valB);
+      const rule = document.querySelector('input[name="compareRule"]:checked').value;
+      
+      // 【修正重點】：淨化字串 (Sanitization)
+      // 1. 移除所有空白與換行 (\s+) - 解決複製貼上造成的斷行與前後多餘空白
+      // 2. 移除所有 ASCII 不可見控制字元 ([\x00-\x1F\x7F]) - 解決 2D 條碼常帶有的 \x1D 等群組分隔符號
+      const cleanA = valA.replace(/\s+/g, '').replace(/[\x00-\x1F\x7F]/g, '');
+      const cleanB = valB.replace(/\s+/g, '').replace(/[\x00-\x1F\x7F]/g, '');
+
+      let isMatch = false;
+
+      if (rule === 'exact') {
+        // 規則 1：完全比對
+        isMatch = (cleanA === cleanB);
+      } else if (rule === 'partial') {
+        // 規則 2：包含比對 (短字串是長字串的一部分)
+        if (cleanA.length <= cleanB.length) {
+          isMatch = cleanB.includes(cleanA);
+        } else {
+          isMatch = cleanA.includes(cleanB);
+        }
+      }
+
       const t = translations[currentLang];
+      
+      // 畫面上依然顯示使用者原始輸入的內容，但比對結果是依照淨化後的結果
       document.getElementById('modalValA').innerText = valA;
       document.getElementById('modalValB').innerText = valB;
+      
       const el = document.getElementById('modalResult');
       el.innerText  = isMatch ? t.matchSuccess : t.matchFail;
       el.className  = 'result-text ' + (isMatch ? 'match' : 'mismatch');
       document.getElementById('resultModal').style.display = 'flex';
     }
+
 
     function closeModal() {
       document.getElementById('resultModal').style.display = 'none';
