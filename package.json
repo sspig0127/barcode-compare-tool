@@ -1,0 +1,9 @@
+{
+  "name": "barcode-compare-tool",
+  "version": "1.0.0",
+  "description": "條碼比對工具",
+  "scripts": {
+    "test": "node --test test/**/*.test.js"
+  },
+  "license": "MIT"
+}
