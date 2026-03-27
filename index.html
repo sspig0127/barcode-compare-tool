@@ -201,6 +201,50 @@
     .match    { color: #198754; }
     .mismatch { color: #dc3545; }
 
+    /* ── 音效開關 ── */
+    .sound-toggle-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 12px; padding-top: 12px; border-top: 1px solid #e9ecef;
+    }
+    .sound-toggle-row > span { font-weight: bold; font-size: 14px; }
+    .switch { position: relative; display: inline-block; width: 46px; height: 26px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .switch-slider {
+      position: absolute; cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #ccc; border-radius: 26px; transition: 0.3s;
+    }
+    .switch-slider:before {
+      content: ""; position: absolute;
+      height: 20px; width: 20px; left: 3px; bottom: 3px;
+      background-color: white; border-radius: 50%; transition: 0.3s;
+    }
+    .switch input:checked + .switch-slider { background-color: #198754; }
+    .switch input:checked + .switch-slider:before { transform: translateX(20px); }
+
+    /* ── 比對結果 Modal 大面積顏色 ── */
+    #resultModal .modal-content { max-width: 480px; transition: background 0.15s; }
+    #resultModal .modal-content.result-success { background: #198754; }
+    #resultModal .modal-content.result-failure { background: #dc3545; }
+    #resultModal .modal-content.result-success p,
+    #resultModal .modal-content.result-success strong,
+    #resultModal .modal-content.result-failure p,
+    #resultModal .modal-content.result-failure strong { color: white; }
+    #resultModal .modal-content.result-success hr,
+    #resultModal .modal-content.result-failure hr { border-color: rgba(255,255,255,0.4); }
+    .barcode-values { }
+    #resultModal .modal-content.result-success .barcode-values,
+    #resultModal .modal-content.result-failure .barcode-values {
+      background: rgba(255,255,255,0.18); border-radius: 8px; padding: 10px; margin-bottom: 5px;
+    }
+    .result-text { font-size: 24px; font-weight: bold; margin-top: 15px; }
+    #resultModal .modal-content.result-success .result-text,
+    #resultModal .modal-content.result-failure .result-text { font-size: 38px; color: white; }
+    #resultModal .modal-content.result-success .btn-clear,
+    #resultModal .modal-content.result-failure .btn-clear {
+      background: rgba(255,255,255,0.25); border: 2px solid rgba(255,255,255,0.6); color: white;
+    }
+
     .mode-selector {
       display: flex; justify-content: space-around; padding: 10px;
       background: #e9ecef; border-radius: 8px;
@@ -250,6 +294,15 @@
       <label>
         <input type="radio" name="compareRule" value="partial" onchange="checkAutoCompare()">
         <span id="ui-rule-partial">包含比對 (短在長內)</span>
+      </label>
+    </div>
+
+    <!-- 提示音開關 -->
+    <div class="sound-toggle-row">
+      <span id="ui-sound-label">🔔 比對提示音</span>
+      <label class="switch">
+        <input type="checkbox" id="soundToggle" checked>
+        <span class="switch-slider"></span>
       </label>
     </div>
   </div>
@@ -316,8 +369,10 @@
   <!-- 比對結果 Modal -->
   <div id="resultModal" class="modal">
     <div class="modal-content">
-      <p><strong id="ui-modal-row1">第一列 (A欄位)</strong><br><span id="modalValA"></span></p>
-      <p><strong id="ui-modal-row2">第二列 (B欄位)</strong><br><span id="modalValB"></span></p>
+      <div class="barcode-values">
+        <p><strong id="ui-modal-row1">第一列 (A欄位)</strong><br><span id="modalValA"></span></p>
+        <p><strong id="ui-modal-row2">第二列 (B欄位)</strong><br><span id="modalValB"></span></p>
+      </div>
       <hr>
       <p id="modalResult" class="result-text"></p>
       <button class="btn-clear" id="ui-modal-close"
@@ -345,6 +400,38 @@
       if (modal && modal.style.display === 'flex' && e.target === modal) closePrivacyModal();
     });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePrivacyModal(); });
+
+    // ── 音效 ──
+    function playBeep(type) {
+      if (!document.getElementById('soundToggle').checked) return;
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (type === 'success') {
+          // 兩段上升音：清脆 ding-dong
+          [880, 1100].forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            const t = ctx.currentTime + i * 0.18;
+            gain.gain.setValueAtTime(0.35, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+            osc.start(t); osc.stop(t + 0.25);
+          });
+        } else {
+          // 低沉鋸齒波：警示嗡嗡聲
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.type = 'sawtooth';
+          osc.frequency.value = 180;
+          gain.gain.setValueAtTime(0.3, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.55);
+          osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.55);
+        }
+      } catch(e) {}
+    }
 
     // ── 系統全域變數 ──
     let html5QrCode       = null;
@@ -405,6 +492,7 @@
         alertCamSwitch: '切換鏡頭失敗：',
         btnMode1D     : '1D 條碼 (Quagga)',
         btnMode2D     : '2D / QR Code',
+        soundLabel    : '🔔 比對提示音',
       },
       'en': {
         title         : 'Barcode Matcher',
@@ -447,6 +535,7 @@
         alertCamSwitch: 'Camera switch failed: ',
         btnMode1D     : '1D Barcode',
         btnMode2D     : '2D / QR Code',
+        soundLabel    : '🔔 Result Sound',
       },
       'vi': {
         title         : 'Công cụ so sánh mã vạch',
@@ -489,6 +578,7 @@
         alertCamSwitch: 'Chuyển camera thất bại: ',
         btnMode1D     : '1D Mã vạch',
         btnMode2D     : '2D / QR Code',
+        soundLabel    : '🔔 Âm thanh kết quả',
       }
     };
 
@@ -537,6 +627,7 @@
       document.getElementById('privacyTitle').innerText = t.privacyTitle;
       document.getElementById('privacyContent').innerHTML = t.privacyHtml;
       document.getElementById('ui-privacy-close').innerText = t.modalClose || '關閉';
+      document.getElementById('ui-sound-label').innerText = t.soundLabel;
     }
 
     async function checkTorchCapability(track) {
@@ -856,12 +947,20 @@
       const el = document.getElementById('modalResult');
       el.innerText  = isMatch ? t.matchSuccess : t.matchFail;
       el.className  = 'result-text ' + (isMatch ? 'match' : 'mismatch');
+
+      const modalContent = document.querySelector('#resultModal .modal-content');
+      modalContent.classList.remove('result-success', 'result-failure');
+      modalContent.classList.add(isMatch ? 'result-success' : 'result-failure');
+
+      playBeep(isMatch ? 'success' : 'failure');
       document.getElementById('resultModal').style.display = 'flex';
     }
 
 
     function closeModal() {
       document.getElementById('resultModal').style.display = 'none';
+      const modalContent = document.querySelector('#resultModal .modal-content');
+      modalContent.classList.remove('result-success', 'result-failure');
     }
 
     window.onload = () => {
